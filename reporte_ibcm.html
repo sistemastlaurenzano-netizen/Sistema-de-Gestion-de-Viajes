@@ -1,0 +1,110 @@
+<div class="modal fade" id="rep_ibcm_modalReporte" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Generar Reporte IBCM</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+         <p class="small text-muted">Seleccione el período fiscal de las facturas a incluir en el reporte de Convenio Multilateral.</p>
+         
+         <div class="row g-3">
+             <div class="col-md-8">
+                 <label class="form-label fw-bold">Mes</label>
+                 <select id="rep_ibcm_selMes" class="form-select">
+                     <option value="0">Enero</option>
+                     <option value="1">Febrero</option>
+                     <option value="2">Marzo</option>
+                     <option value="3">Abril</option>
+                     <option value="4">Mayo</option>
+                     <option value="5">Junio</option>
+                     <option value="6">Julio</option>
+                     <option value="7">Agosto</option>
+                     <option value="8">Septiembre</option>
+                     <option value="9">Octubre</option>
+                     <option value="10">Noviembre</option>
+                     <option value="11">Diciembre</option>
+                 </select>
+             </div>
+             <div class="col-md-4">
+                 <label class="form-label fw-bold">Año</label>
+                 <input type="number" id="rep_ibcm_inputAnio" class="form-control" min="2020" max="2030">
+             </div>
+         </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success fw-bold" onclick="rep_ibcm_ejecutarReporte()">📥 Descargar CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Esta función debe ser llamada desde tu menú principal o botón correspondiente
+  // Ej: onclick="rep_ibcm_abrirModal()"
+  function rep_ibcm_abrirModal() {
+      // Pre-seleccionar mes y año actual
+      const hoy = new Date();
+      document.getElementById('rep_ibcm_selMes').value = hoy.getMonth();
+      document.getElementById('rep_ibcm_inputAnio').value = hoy.getFullYear();
+      
+      const modal = new bootstrap.Modal(document.getElementById('rep_ibcm_modalReporte'));
+      modal.show();
+  }
+
+  function rep_ibcm_ejecutarReporte() {
+      const mes = parseInt(document.getElementById('rep_ibcm_selMes').value);
+      const anio = parseInt(document.getElementById('rep_ibcm_inputAnio').value);
+
+      if (isNaN(mes) || isNaN(anio)) {
+          alert("Seleccione un mes y año válidos.");
+          return;
+      }
+
+      // Calcular Primer y Último día del mes seleccionado
+      const primerDia = new Date(anio, mes, 1);
+      const ultimoDia = new Date(anio, mes + 1, 0);
+
+      // Formatear a YYYY-MM-DD para el backend, corrigiendo la diferencia de zona horaria
+      const fDesde = new Date(primerDia.getTime() - (primerDia.getTimezoneOffset() * 60000)).toISOString().split('T')[0]; 
+      const fHasta = new Date(ultimoDia.getTime() - (ultimoDia.getTimezoneOffset() * 60000)).toISOString().split('T')[0]; 
+
+      // Cerrar modal
+      const modalEl = document.getElementById('rep_ibcm_modalReporte');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if(modal) modal.hide();
+
+      showLoading(true);
+
+      // Obtener identidad del usuario logueado en la SPA
+      const usu = sessionStorage.getItem('sys_usuario') || '';
+
+      google.script.run
+          .withSuccessHandler(res => {
+              showLoading(false);
+              
+              if (res.success) {
+                  // Descargar archivo CSV
+                  const blob = new Blob([res.csv], { type: 'text/csv;charset=utf-8;' });
+                  const link = document.createElement("a");
+                  if (link.download !== undefined) { 
+                      const url = URL.createObjectURL(blob);
+                      link.setAttribute("href", url);
+                      link.setAttribute("download", res.filename);
+                      link.style.visibility = 'hidden';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                  }
+              } else {
+                  alert("Error al generar reporte: " + res.error);
+              }
+          })
+          .withFailureHandler(err => {
+              showLoading(false);
+              alert("Error de red: " + err.message);
+          })
+          .apiGenerarReporteIBCM(usu, fDesde, fHasta); // Enviamos el usuario como primer parámetro
+  }
+</script>

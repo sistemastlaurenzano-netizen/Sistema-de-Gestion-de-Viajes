@@ -1,0 +1,1245 @@
+<style>
+  .modal-fullscreen-custom { width: 98%; max-width: 1600px; margin: auto; }
+  .modal-header-info { background-color: #e9ecef; border-bottom: 1px solid #dee2e6; padding: 10px 20px; }
+  .nav-tabs .nav-link.active { font-weight: bold; color: #0d6efd; border-top: 3px solid #0d6efd; }
+  .field-calc { background-color: #f8f9fa; font-weight: bold; color: #495057; }
+  .filter-input { width: 100%; font-size: 0.75rem; border: 1px solid #ced4da; border-radius: 2px; }
+  .date-filter-box { background-color: #f1f3f5; padding: 10px; border-radius: 5px; border: 1px solid #dee2e6; margin-bottom: 15px; }
+  
+  th { vertical-align: middle; cursor: pointer; user-select: none; font-size: 0.85rem; }
+  th:hover { background-color: #495057 !important; color: #fff; }
+
+  .bloqueado { opacity: 0.7; }
+  .bloqueado input, .bloqueado select, .bloqueado textarea, .bloqueado button { pointer-events: none; }
+  
+  /* Estilos para moneda */
+  .txt-moneda { font-weight: bold; color: #666; margin-right: 2px; }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <h2 class="mb-0">Consulta y Modificacion de Viajes</h2>
+  <div>
+    <button type="button" class="btn btn-secondary fw-bold me-2" onclick="viaj_exportarCSV()">📥 Exportar CSV</button>
+    <button id="viaj_btnAlta" class="btn btn-success d-none" onclick="viaj_abrirModal()">+ Nuevo Viaje</button>
+  </div>
+</div>
+
+<div id="viaj_alertBox" class="alert alert-danger d-none shadow-sm"></div>
+
+<div class="date-filter-box">
+  <div class="row align-items-center g-2">
+     <div class="col-auto"><span class="fw-bold small text-secondary">Filtro Inicio Viaje:</span></div>
+     <div class="col-auto">
+        <div class="input-group input-group-sm">
+           <span class="input-group-text">Desde</span>
+           <input type="date" id="viaj_filtroFechaDesde" class="form-control">
+        </div>
+     </div>
+     <div class="col-auto">
+        <div class="input-group input-group-sm">
+           <span class="input-group-text">Hasta</span>
+           <input type="date" id="viaj_filtroFechaHasta" class="form-control">
+        </div>
+     </div>
+     <div class="col-auto">
+        <button class="btn btn-primary btn-sm px-3" onclick="viaj_cargarDatos()">🔄 Actualizar</button>
+     </div>
+  </div>
+</div>
+
+<div class="table-responsive" style="max-height: 75vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" id="viaj_tablaViajes" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th onclick="viaj_ordenarGrilla(0)">Acciones</th>
+        <th onclick="viaj_ordenarGrilla(1)">Nro Viaje ⇅</th>
+        
+        <th onclick="viaj_ordenarGrilla(2)">Cta ⇅</th>
+        <th onclick="viaj_ordenarGrilla(3)">Sub ⇅</th>
+
+        <th onclick="viaj_ordenarGrilla(4)">Cliente ⇅</th>
+        <th onclick="viaj_ordenarGrilla(5)">Int. Trac ⇅</th>
+        <th onclick="viaj_ordenarGrilla(6)">Int. Remo ⇅</th>
+        <th onclick="viaj_ordenarGrilla(7)">Tractor ⇅</th>
+        <th onclick="viaj_ordenarGrilla(8)">Remolque ⇅</th>
+        <th onclick="viaj_ordenarGrilla(9)">Chofer ⇅</th>
+        <th onclick="viaj_ordenarGrilla(10)">Categoría ⇅</th>
+        <th onclick="viaj_ordenarGrilla(11)">Servicio ⇅</th>
+        <th onclick="viaj_ordenarGrilla(12)">Origen ⇅</th>
+        <th onclick="viaj_ordenarGrilla(13)">Destino ⇅</th>
+        <th onclick="viaj_ordenarGrilla(14)">DT (Orden) ⇅</th>
+        <th onclick="viaj_ordenarGrilla(15)">Turno Carga ⇅</th>
+        <th onclick="viaj_ordenarGrilla(16)">Turno Desc. ⇅</th>
+        <th onclick="viaj_ordenarGrilla(17)">Estado ⇅</th>
+        
+        <th onclick="viaj_ordenarGrilla(18)">Controlado ⇅</th>
+        
+        <th onclick="viaj_ordenarGrilla(19)">Inicio ⇅</th>
+        <th onclick="viaj_ordenarGrilla(20)">Lleg. Ori ⇅</th>
+        <th onclick="viaj_ordenarGrilla(21)">Sal. Ori ⇅</th>
+        <th onclick="viaj_ordenarGrilla(22)">Lleg. Des ⇅</th>
+        <th onclick="viaj_ordenarGrilla(23)">Sal. Des ⇅</th>
+        <th onclick="viaj_ordenarGrilla(24)">Remito ⇅</th>
+        <th onclick="viaj_ordenarGrilla(25)">Pallets ⇅</th>
+        <th onclick="viaj_ordenarGrilla(26)">TN ⇅</th>
+        <th onclick="viaj_ordenarGrilla(27)">Costo Cond. ⇅</th>
+        <th onclick="viaj_ordenarGrilla(28)">Est. Liq. Chof ⇅</th>
+        
+        <th onclick="viaj_ordenarGrilla(29)" class="bg-secondary text-white">Moneda ⇅</th>
+
+        <th onclick="viaj_ordenarGrilla(30)">Total ⇅</th>
+        <th onclick="viaj_ordenarGrilla(31)">Liquidado ⇅</th>
+        <th onclick="viaj_ordenarGrilla(32)">Pendiente ⇅</th>
+        <th onclick="viaj_ordenarGrilla(33)">Est. Liq. Viaje ⇅</th>
+        <th onclick="viaj_ordenarGrilla(34)">Kms ⇅</th>
+      </tr>
+      <tr class="table-light" id="viaj_filterRow">
+        <td></td> 
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(1)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(2)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(3)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(4)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(5)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(6)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(7)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(8)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(9)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(10)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(11)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(12)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(13)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(14)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(15)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(16)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(17)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(18)" placeholder="Si/No"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(19)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(20)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(21)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(22)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(23)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(24)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(25)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(26)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(27)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(28)"></td>
+        
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(29)" placeholder="$ / USD"></td>
+        
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(30)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(31)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(32)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(33)"></td>
+        <td><input type="text" class="filter-input" onkeyup="viaj_filtrarGrilla(34)"></td>
+      </tr>
+    </thead>
+    <tbody id="viaj_tableBodyViajes">
+      <tr><td colspan="35" class="text-center text-primary fw-bold p-4">Cargando viajes...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="viaj_modalViaje" tabindex="-1">
+  <div class="modal-dialog modal-fullscreen-custom"> 
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title">Gestión de Viaje</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-0">
+        <form id="viaj_formViaje">
+          <input type="hidden" name="actionType" id="viaj_actionType">
+          
+          <div class="modal-header-info">
+             <div class="row g-2 align-items-end">
+                <div class="col-md-2">
+                   <label class="form-label small fw-bold">Nro Viaje</label>
+                   <input type="text" name="Nro_Viaje" id="viaj_inputNroViaje" class="form-control form-control-sm text-center fw-bold bg-white" readonly>
+                </div>
+                
+                <div class="col-md-3">
+                   <label class="form-label small fw-bold">Estado</label>
+                   <div class="input-group input-group-sm">
+                     <input type="text" name="Estado" id="viaj_inputEstado" class="form-control fw-bold bg-light" readonly value="Sin Asignar">
+                     <button class="btn btn-outline-danger" id="viaj_btnCancelarViaje" type="button" onclick="viaj_cancelarViaje()">🚫</button>
+                   </div>
+                </div>
+
+                <div class="col-md-3">
+                   <label class="form-label small">Ubicación Actual</label>
+                   <div class="input-group input-group-sm">
+                      <input type="text" name="Ubicacion actual" id="viaj_inputUbicacion" class="form-control" readonly>
+                      <button class="btn btn-outline-secondary" type="button" onclick="viaj_consultarGeotab(true)">🔄</button>
+                   </div>
+                </div>
+                
+                <div class="col-md-2">
+                   <label class="form-label small">Tipo Servicio</label>
+                   <select name="Tipo_Servicio" id="viaj_selTipoServicio" class="form-select form-select-sm">
+                      <option value="">-</option>
+                      <option value="Con Cargo Con Carga">Con Cargo Con Carga</option>
+                      <option value="Con Cargo Sin Carga">Con Cargo Sin Carga</option>
+                      <option value="Sin Cargo Con Carga">Sin Cargo Con Carga</option>
+                      <option value="Sin Cargo Sin Carga">Sin Cargo Sin Carga</option>
+                   </select>
+                </div>
+
+                <div class="col-md-2 d-flex flex-column align-items-end">
+                   <div class="form-check mb-2">
+                       <input class="form-check-input" type="checkbox" name="CONTROLADO" id="viaj_chkControlado" value="true" onchange="viaj_toggleControlado()">
+                       <label class="form-check-label small fw-bold text-primary" for="viaj_chkControlado">Controlado</label>
+                   </div>
+                   <button type="button" class="btn btn-primary btn-sm px-4 w-100" id="viaj_btnGuardar" onclick="viaj_guardar()">💾 Guardar</button>
+                </div>
+             </div>
+          </div>
+
+          <div id="viaj_tabsContainer">
+              <ul class="nav nav-tabs px-3 pt-2" id="viaj_myTab" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#viaj_prog" type="button">1. Programación</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#viaj_ruta" type="button">2. Ruta y Tiempos</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#viaj_econ" type="button">3. Económico</button></li>
+              </ul>
+
+              <div class="tab-content p-3">
+                
+                <div class="tab-pane fade show active" id="viaj_prog">
+                   <div class="row g-3">
+                      <div class="col-md-4 border-end">
+                         <h6 class="text-primary">Datos del Cliente</h6>
+                         <div class="mb-2">
+                            <label class="form-label small">Cliente</label>
+                            <select id="viaj_selCliente" class="form-select form-select-sm" onchange="viaj_cargarDatosCliente(true)">
+                              <option value="">- Seleccionar -</option>
+                            </select>
+                         </div>
+                         <div class="row g-2">
+                            <div class="col-4">
+                               <label class="form-label small">Cta</label>
+                               <input type="number" name="Cuenta" id="viaj_inputCta" class="form-control form-control-sm" onchange="viaj_buscarPorCuenta()">
+                            </div>
+                            <div class="col-4">
+                               <label class="form-label small">Sub</label>
+                               <input type="number" name="Subcuenta" id="viaj_inputSub" class="form-control form-control-sm" onchange="viaj_buscarPorCuenta()">
+                            </div>
+                            <input type="hidden" name="Cliente_Key" id="viaj_inputClienteKey">
+                            <input type="hidden" name="Subcuenta_key" id="viaj_inputSubKey">
+                            <input type="hidden" name="Cliente" id="viaj_inputNombreCliente">
+                         </div>
+                         <div class="mt-2">
+                            <label class="form-label small">Nro Pedido (DT)</label>
+                            <input type="text" name="DT" class="form-control form-control-sm">
+                         </div>
+                         <div class="row g-2 mt-1">
+                            <div class="col-6">
+                               <label class="form-label small">Turno Carga</label>
+                               <input type="datetime-local" name="Turno_Carga" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-6">
+                               <label class="form-label small">Turno Desc.</label>
+                               <input type="datetime-local" name="Turno Descarga" class="form-control form-control-sm">
+                            </div>
+                         </div>
+                      </div>
+
+                      <div class="col-md-8">
+                         <h6 class="text-primary">Asignación de Recursos</h6>
+                         <div class="row g-3">
+                            <div class="col-md-6">
+                               <label class="form-label small">Chofer</label>
+                               <select name="Chofer" id="viaj_selChofer" class="form-select form-select-sm" onchange="viaj_logicChoferChange()">
+                                  <option value="">- Sin Asignar -</option>
+                               </select>
+                               <div class="row g-2 mt-1">
+                                  <div class="col-6">
+                                     <label class="form-label small">Categoría</label>
+                                     <input type="text" name="CATEGORIA_CHOFER" id="viaj_inputCatChofer" class="form-control form-control-sm field-calc" readonly>
+                                  </div>
+                                  <div class="col-6">
+                                     <label class="form-label small">Empresa</label>
+                                     <input type="text" name="EMPRESA_CHOFER" id="viaj_inputEmpChofer" class="form-control form-control-sm field-calc" readonly>
+                                  </div>
+                               </div>
+                            </div>
+
+                            <div class="col-md-6">
+                               <div class="row g-2">
+                                  <div class="col-4">
+                                     <label class="form-label small">Tractor</label>
+                                     <select name="Interno" id="viaj_selTractorInt" class="form-select form-select-sm" onchange="viaj_logicTractorChange()">
+                                        <option value="">-</option>
+                                     </select>
+                                  </div>
+                                  <div class="col-8">
+                                     <label class="form-label small">Patente</label>
+                                     <input type="text" name="Tractor" id="viaj_inputPatTractor" class="form-control form-control-sm field-calc" readonly>
+                                  </div>
+                                  <div class="col-4 mt-2">
+                                     <label class="form-label small">Remolque</label>
+                                     <select name="Interno_R" id="viaj_selRemolqueInt" class="form-select form-select-sm" onchange="viaj_cargarPatenteRemolque()">
+                                        <option value="">-</option>
+                                     </select>
+                                  </div>
+                                  <div class="col-8 mt-2">
+                                     <label class="form-label small">Patente</label>
+                                     <input type="text" name="Remolque" id="viaj_inputPatRemolque" class="form-control form-control-sm field-calc" readonly>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+
+                <div class="tab-pane fade" id="viaj_ruta">
+                   <div class="row g-3 mb-3">
+                      <div class="col-md-6 border-end">
+                         <h6 class="text-primary">Origen</h6>
+                         <label class="form-label small">Lugar Origen</label>
+                         <select name="Origen" id="viaj_selOrigen" class="form-select form-select-sm"><option value="">-</option></select>
+                      </div>
+                      <div class="col-md-6">
+                         <h6 class="text-primary">Destino</h6>
+                         <label class="form-label small">Lugar Destino</label>
+                         <select name="Destino" id="viaj_selDestino" class="form-select form-select-sm"><option value="">-</option></select>
+                      </div>
+                   </div>
+
+                   <hr class="text-secondary opacity-25">
+
+                   <h6 class="text-secondary small mb-2">Cronograma del Viaje</h6>
+                   <div class="row g-2 mb-3">
+                      <div class="col-md-2 border-end">
+                         <label class="form-label small fw-bold">1. Inicio Viaje</label>
+                         <input type="datetime-local" name="Inicio_Viaje" id="viaj_inputInicioViaje" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-md-2">
+                         <label class="form-label small">2. Llegada Origen</label>
+                         <input type="datetime-local" name="LLegada_Origen" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-md-2 border-end">
+                         <label class="form-label small">3. Salida Origen</label>
+                         <input type="datetime-local" name="Salida_Origen" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-md-3">
+                         <label class="form-label small">4. Llegada Destino</label>
+                         <input type="datetime-local" name="LLegada_destino" id="viaj_inputLlegadaDestino" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-md-3">
+                         <label class="form-label small fw-bold">5. Salida Destino</label>
+                         <input type="datetime-local" name="Salida_Destino" id="viaj_inputSalidaDestino" class="form-control form-control-sm" onchange="viaj_toggleControlado()">
+                      </div>
+                   </div>
+
+                   <hr class="text-secondary opacity-25">
+
+                   <div class="d-flex justify-content-between align-items-center mb-2">
+                       <h6 class="text-primary m-0">Datos Satelitales (Geotab)</h6>
+                       <button type="button" class="btn btn-outline-primary btn-sm py-0" onclick="viaj_consultarGeotab(false)">🔄 Actualizar Km</button>
+                   </div>
+                   <div class="row g-3">
+                       <div class="col-md-4">
+                          <label class="form-label small">Odom. Inicio</label>
+                          <input type="number" name="ODOMETRO INICIO" id="viaj_inputOdoIni" class="form-control form-control-sm" onchange="viaj_calcDistancia()">
+                       </div>
+                       <div class="col-md-4">
+                          <label class="form-label small">Odom. Fin</label>
+                          <input type="number" name="ODOMETRO FIN" id="viaj_inputOdoFin" class="form-control form-control-sm" onchange="viaj_calcDistancia()">
+                       </div>
+                       <div class="col-md-4">
+                          <label class="form-label small fw-bold">Distancia (Km)</label>
+                          <input type="number" name="DISTANCIA" id="viaj_inputDistancia" class="form-control form-control-sm field-calc" readonly>
+                       </div>
+                   </div>
+                </div>
+
+                <div class="tab-pane fade" id="viaj_econ">
+                   <input type="hidden" name="MONEDA" id="viaj_inputMonedaViaje" value="$">
+
+                   <div class="row g-3">
+                      <div class="col-md-4 border-end">
+                         <h6 class="text-primary">Carga</h6>
+                         <div class="row g-2">
+                            <div class="col-12"><label class="form-label small">Producto</label><select name="PRODUCTO" id="viaj_selProducto" class="form-select form-select-sm"><option value="">-</option></select></div>
+                            <div class="col-6"><label class="form-label small">Pallets</label><input type="number" name="PALLETS" id="viaj_inputValorPalletsAux" class="form-control form-control-sm"></div>
+                            <div class="col-6"><label class="form-label small">TN</label><input type="number" name="TN" id="viaj_inputValorTnAux" class="form-control form-control-sm" step="0.01"></div>
+                            <div class="col-12"><label class="form-label small">Remito</label><input type="text" name="REMITO" id="viaj_inputRemitoAux" class="form-control form-control-sm"></div>
+                            
+                            <div class="col-12 mt-3 p-2 bg-light border rounded">
+                               <label class="form-label small fw-bold">Cargar Remitos (PDF/JPG)</label>
+                               <div class="input-group input-group-sm mb-2">
+                                   <input type="file" id="viaj_fileRemito" class="form-control" accept="image/*,application/pdf">
+                               </div>
+                               <label class="form-label small text-muted">Archivos en Drive:</label>
+                               <div class="bg-white border rounded" style="max-height: 120px; overflow-y: auto;">
+                                   <table class="table table-sm table-striped table-hover mb-0" style="font-size: 0.75rem;">
+                                        <thead class="table-light"><tr><th>Archivo</th><th class="text-end">Fecha</th></tr></thead>
+                                        <tbody id="viaj_listRemitos"><tr><td colspan="2" class="text-center text-muted">Sin archivos</td></tr></tbody>
+                                   </table>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+
+                      <div class="col-md-2 border-end">
+                         <h6 class="text-primary">Costos Op.</h6>
+                         <div class="mb-2">
+                            <label class="form-label small">$ Costo Cond.</label>
+                            <input type="number" name="COSTO CONDUCTOR" class="form-control form-control-sm" step="0.01">
+                         </div>
+                      </div>
+
+                      <div class="col-md-6">
+                         <div class="d-flex justify-content-between align-items-center mb-2">
+                             <h6 class="text-success fw-bold m-0">A Facturar</h6>
+                             <span class="badge bg-success" id="viaj_badgeMonedaDisplay">Moneda: $</span>
+                         </div>
+                         
+                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-2"><label class="form-label small"><span class="txt-moneda">$</span> Viaje</label><input type="number" name="$ VIAJE" id="viaj_inputValorViaje" class="form-control form-control-sm" step="0.01" onchange="viaj_calcTotales()"></div>
+                                <div class="mb-2"><label class="form-label small"><span class="txt-moneda">$</span> Peaje</label><input type="number" name="$PEAJE" id="viaj_inputPeaje" class="form-control form-control-sm" step="0.01" onchange="viaj_calcTotales()"></div>
+                                <div class="mb-2"><label class="form-label small"><span class="txt-moneda">$</span> Km Recorrido</label><input type="number" name="$KMRECORRIDO" id="viaj_inputKmRecorrido" class="form-control form-control-sm" step="0.01" onchange="viaj_calcTotales()"></div>
+                                <div class="mb-2"><label class="form-label small"><span class="txt-moneda">$</span> Pallets</label><input type="number" name="$PALLETS" id="viaj_inputValorPallets" class="form-control form-control-sm" step="0.01" onchange="viaj_calcTotales()"></div>
+                                <div class="mb-2"><label class="form-label small"><span class="txt-moneda">$</span> TN</label><input type="number" name="$TN" id="viaj_inputValorTn" class="form-control form-control-sm" step="0.01" onchange="viaj_calcTotales()"></div>
+                            </div>
+
+                            <div class="col-md-6 ps-md-3">
+                                 <div class="p-3 bg-light border rounded">
+                                     <div class="mb-3">
+                                        <label class="form-label fw-bold text-success" style="font-size:1.1rem"><span class="txt-moneda">$</span> Total</label>
+                                        <input type="number" name="$ValorTotal" id="viaj_inputTotal" class="form-control form-control-lg border-success fw-bold text-end" readonly>
+                                     </div>
+                                     <div class="mb-3">
+                                        <label class="form-label small fw-bold"><span class="txt-moneda">$</span> Liquidado</label>
+                                        <input type="number" name="$Liquidado" id="viaj_inputLiq" class="form-control form-control-sm text-end" value="0" step="0.01" onchange="viaj_calcTotales()">
+                                     </div>
+                                     <div class="mb-0">
+                                        <label class="form-label small fw-bold text-danger" style="font-size:1rem"><span class="txt-moneda">$</span> Pendiente</label>
+                                        <input type="number" name="$PendienteLiquidar" id="viaj_inputPendiente" class="form-control form-control text-danger fw-bold text-end" readonly>
+                                     </div>
+                                     <input type="hidden" name="Estado_Liquidacion" id="viaj_selEstLiq">
+
+                                     <hr class="my-2">
+                                     <button type="button" class="btn btn-warning w-100 fw-bold" id="viaj_btnValorizar" onclick="viaj_valorizarViaje()">💲 Valorizar Viaje</button>
+                                 </div>
+                            </div>
+                         </div>
+                      </div>
+
+                   </div>
+                </div>
+              </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Variables prefijadas SPA
+  var viaj_userRole = null;
+  var viaj_listasGlobales = {}; 
+  var viaj_nextIdGlobal = ""; 
+  var viaj_viajesDataCache = []; 
+  var viaj_currentSort = { col: 1, asc: true }; 
+
+  function viaj_initFechas() {
+     const hoy = new Date();
+     const hace15 = new Date();
+     hace15.setDate(hoy.getDate() - 15);
+     const toInputDate = (d) => {
+         const year = d.getFullYear();
+         const month = String(d.getMonth() + 1).padStart(2, '0');
+         const day = String(d.getDate()).padStart(2, '0');
+         return `${year}-${month}-${day}`;
+     };
+     document.getElementById('viaj_filtroFechaHasta').value = toInputDate(hoy);
+     document.getElementById('viaj_filtroFechaDesde').value = toInputDate(hace15);
+     viaj_cargarDatos();
+  }
+
+  function viaj_cargarDatos() {
+    showLoading(true);
+    const fDesde = document.getElementById('viaj_filtroFechaDesde').value;
+    const fHasta = document.getElementById('viaj_filtroFechaHasta').value;
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('viaj_alertBox').classList.add('d-none');
+
+    google.script.run
+      .withSuccessHandler(viaj_renderTable)
+      .withFailureHandler(viaj_handleError)
+      .apiGetViajes(usu, fDesde, fHasta);
+  }
+
+  function viaj_renderTable(response) {
+    showLoading(false);
+    if (!response || !response.success) {
+       document.getElementById('viaj_alertBox').innerHTML = '<strong>Error:</strong> ' + (response ? response.error : 'Desconocido');
+       document.getElementById('viaj_alertBox').classList.remove('d-none');
+       document.getElementById('viaj_tableBodyViajes').innerHTML = '<tr><td colspan="35" class="text-center text-danger p-4">No se pudieron cargar los datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    viaj_viajesDataCache = data || []; 
+    viaj_userRole = response.role;
+    viaj_listasGlobales = response.lists; 
+    viaj_nextIdGlobal = response.nextId;
+    
+    try {
+        viaj_inicializarSelects();
+    } catch(e) {
+        console.warn("Faltan listas auxiliares.", e);
+    }
+
+    viaj_pintarGrilla(viaj_viajesDataCache);
+    if (viaj_userRole === 'Admin' || viaj_userRole === 'Update') {
+        document.getElementById('viaj_btnAlta').classList.remove('d-none');
+    }
+  }
+
+  function viaj_pintarGrilla(listaViajes) {
+    const tbody = document.getElementById('viaj_tableBodyViajes');
+    tbody.innerHTML = '';
+
+    if (listaViajes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="35" class="text-center text-muted p-4">No se encontraron viajes en este período.</td></tr>';
+        return;
+    }
+
+    listaViajes.forEach(row => {
+      try {
+        const idViaje = viaj_padId(row.Nro_Viaje);
+        const btn = `<button class="btn btn-xs btn-warning" onclick="viaj_editar('${idViaje}')">✏️</button>`;
+        
+        const cta = row.Cuenta || row.Cliente_Key || '';
+        const sub = row.Subcuenta || row.Subcuenta_key || '';
+        
+        const isCtrl = (row.CONTROLADO === true || String(row.CONTROLADO).toLowerCase() === 'true');
+        const btnClass = isCtrl ? 'btn-success' : 'btn-outline-secondary';
+        const btnIcon = isCtrl ? '☑️ SI' : '⬜';
+        const controladoBtn = `<button class="btn btn-sm ${btnClass} py-0 px-2" style="min-width:60px; font-weight:bold;" onclick="viaj_clickToggleControlado('${idViaje}', this, event)">${btnIcon}</button>`;
+
+        const moneda = row.MONEDA || '$';
+
+        const tr = `<tr>
+          <td class="text-center">${btn}</td>
+          <td><strong>${idViaje}</strong></td>
+          
+          <td>${cta}</td>
+          <td>${sub}</td>
+
+          <td>${row.Cliente || ''}</td>
+          <td>${row.Interno || ''}</td>
+          <td>${row.Interno_R || ''}</td>
+          <td>${row.Tractor || ''}</td>
+          <td>${row.Remolque || ''}</td>
+          <td>${row.Chofer || ''}</td>
+          <td>${row.CATEGORIA_CHOFER || ''}</td>
+          <td>${row.Tipo_Servicio || ''}</td>
+          <td>${row.Origen || ''}</td>
+          <td>${row.Destino || ''}</td>
+          <td>${row.DT || ''}</td>
+          <td>${viaj_formatoFechaCorta(row.Turno_Carga)}</td>
+          <td>${viaj_formatoFechaCorta(row['Turno Descarga'])}</td>
+          <td>${row.Estado || ''}</td>
+          <td class="text-center">${controladoBtn}</td>
+          <td>${viaj_formatoFechaCorta(row.Inicio_Viaje)}</td>
+          <td>${viaj_formatoFechaCorta(row.LLegada_Origen)}</td>
+          <td>${viaj_formatoFechaCorta(row.Salida_Origen)}</td>
+          <td>${viaj_formatoFechaCorta(row.LLegada_destino)}</td>
+          <td>${viaj_formatoFechaCorta(row.Salida_Destino)}</td>
+          <td>${row.REMITO || ''}</td>
+          <td>${row.PALLETS || ''}</td>
+          <td>${row.TN || ''}</td>
+          <td>${row['COSTO CONDUCTOR'] || ''}</td>
+          <td>${row.Estado_Liquidacion_Chofer || ''}</td>
+          
+          <td class="text-center fw-bold text-secondary">${moneda}</td>
+          
+          <td>${row['$ValorTotal'] || ''}</td>
+          <td>${row['$Liquidado'] || ''}</td>
+          <td>${row['$PendienteLiquidar'] || ''}</td>
+          <td>${row.Estado_Liquidacion || ''}</td>
+          <td>${row.DISTANCIA || ''}</td>
+        </tr>`;
+        tbody.innerHTML += tr;
+      } catch (e) { console.error(e); }
+    });
+  }
+
+  function viaj_clickToggleControlado(nroViaje, btn, e) {
+    if (e) e.stopPropagation(); 
+    
+    const row = viaj_viajesDataCache.find(r => viaj_padId(r.Nro_Viaje) === viaj_padId(nroViaje));
+    const isCurrentlyControlled = (row && (row.CONTROLADO === true || String(row.CONTROLADO).toLowerCase() === 'true'));
+
+    if (!isCurrentlyControlled && row) {
+        const error = viaj_validarRequisitosDesdeFila(row);
+        if (error) {
+            alert("NO SE PUEDE CONTROLAR:\n" + error);
+            if (error.includes("$ Total debe ser mayor a 0")) {
+                if(confirm("El viaje tiene valor $0. ¿Desea abrir el viaje para editar y valorizar?")) {
+                    viaj_editar(nroViaje);
+                }
+            }
+            return; 
+        }
+    }
+
+    const originalText = btn.innerHTML;
+    const originalClass = btn.className;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>';
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    google.script.run
+        .withSuccessHandler(res => {
+            btn.disabled = false;
+            if (res.success) {
+                const nuevoEsSi = (res.nuevoEstado === 'SI');
+                btn.className = `btn btn-sm ${nuevoEsSi ? 'btn-success' : 'btn-outline-secondary'} py-0 px-2`;
+                btn.style.fontWeight = "bold";
+                btn.style.minWidth = "60px";
+                btn.innerHTML = nuevoEsSi ? '☑️ SI' : '⬜';
+                
+                if(row) row.CONTROLADO = nuevoEsSi;
+            } else {
+                btn.className = originalClass;
+                btn.innerHTML = originalText;
+                alert("Atención: " + res.error);
+            }
+        })
+        .withFailureHandler(err => {
+            btn.disabled = false;
+            btn.className = originalClass;
+            btn.innerHTML = originalText;
+            alert("Error de red: " + err.message);
+        })
+        .apiToggleViajeControlado(usu, nroViaje); 
+  }
+
+  function viaj_validarRequisitosDesdeFila(row) {
+      if (!row.Salida_Destino) return "El viaje debe estar Finalizado (Tener Fecha Salida Destino).";
+      
+      const tipoServicio = String(row.Tipo_Servicio || "");
+      if (!tipoServicio) return "Debe tener un Tipo de Servicio asignado.";
+      
+      if (!row.Origen) return "Falta indicar Origen.";
+      if (!row.Destino) return "Falta indicar Destino.";
+      if (!row.Chofer) return "Falta asignar un Chofer.";
+      
+      if (tipoServicio.includes("Con Cargo")) {
+          if (!row.Cliente) return "Si es 'Con Cargo', falta el Cliente.";
+          const total = parseFloat(row['$ValorTotal']) || 0;
+          if (total <= 0) return "Si es 'Con Cargo', el $ Total debe ser mayor a 0.\nEdite el viaje para valorizarlo.";
+      }
+      
+      if (tipoServicio.includes("Con Carga")) {
+          const remito = String(row.REMITO || "").trim();
+          if (!remito) return "Falta Nro de Remito.";
+          const pallets = parseFloat(row.PALLETS) || 0;
+          const tn = parseFloat(row.TN) || 0;
+          if (pallets <= 0 && tn <= 0) return "Falta indicar Pallets o TN cargadas.";
+      }
+      return null;
+  }
+
+  function viaj_actualizarMonedaUI(moneda) {
+      if (!moneda) moneda = '$';
+      document.getElementById('viaj_inputMonedaViaje').value = moneda;
+      document.getElementById('viaj_badgeMonedaDisplay').innerText = "Moneda: " + moneda;
+      const labels = document.querySelectorAll('.txt-moneda');
+      labels.forEach(el => el.innerText = moneda);
+  }
+
+  function viaj_bloquearFormulario(bloquear) {
+      const inputsHeader = document.querySelectorAll('.modal-header-info select, .modal-header-info input:not(#viaj_chkControlado), .modal-header-info button:not(#viaj_btnGuardar)');
+      const inputsTabs = document.querySelectorAll('.tab-content input, .tab-content select, .tab-content textarea, .tab-content button');
+
+      if (bloquear) {
+          inputsHeader.forEach(el => el.disabled = true);
+          document.getElementById('viaj_fileRemito').disabled = true;
+          document.getElementById('viaj_btnCancelarViaje').disabled = true;
+          document.getElementById('viaj_btnValorizar').disabled = true;
+          inputsTabs.forEach(el => el.disabled = true);
+          document.querySelector('.tab-content').style.opacity = '0.7';
+      } else {
+          inputsHeader.forEach(el => el.disabled = false);
+          document.getElementById('viaj_fileRemito').disabled = false;
+          document.getElementById('viaj_btnCancelarViaje').disabled = false;
+          document.getElementById('viaj_btnValorizar').disabled = false;
+          inputsTabs.forEach(el => el.disabled = false);
+          document.querySelector('.tab-content').style.opacity = '1';
+      }
+  }
+
+  function viaj_validarRequisitosControlado() {
+      const fin = document.getElementById('viaj_inputSalidaDestino').value;
+      if (!fin) return "El viaje debe estar Finalizado (Tener Fecha Salida Destino).";
+      const tipoServicio = document.getElementById('viaj_selTipoServicio').value;
+      if (!tipoServicio) return "Debe seleccionar un Tipo de Servicio.";
+      const origen = document.getElementById('viaj_selOrigen').value;
+      if (!origen) return "Falta indicar Origen.";
+      const destino = document.getElementById('viaj_selDestino').value;
+      if (!destino) return "Falta indicar Destino.";
+      const chofer = document.getElementById('viaj_selChofer').value;
+      if (!chofer) return "Falta asignar un Chofer.";
+      if (tipoServicio.includes("Con Cargo")) {
+          const cliente = document.getElementById('viaj_selCliente').value;
+          if (!cliente) return "Si es 'Con Cargo', falta el Cliente.";
+          const total = parseFloat(document.getElementById('viaj_inputTotal').value) || 0;
+          if (total <= 0) return "Si es 'Con Cargo', el $ Total debe ser mayor a 0.";
+      }
+      if (tipoServicio.includes("Con Carga")) {
+          const remito = document.querySelector('input[name="REMITO"]').value;
+          if (!remito || remito.trim() === '') return "Falta Nro de Remito.";
+          const pallets = parseFloat(document.querySelector('input[name="PALLETS"]').value) || 0;
+          const tn = parseFloat(document.querySelector('input[name="TN"]').value) || 0;
+          if (pallets <= 0 && tn <= 0) return "Falta indicar Pallets o TN cargadas.";
+          const fileInput = document.getElementById('viaj_fileRemito');
+          const hayArchivoNuevo = (fileInput.files.length > 0);
+          const tablaArchivos = document.getElementById('viaj_listRemitos');
+          const hayArchivosViejos = (tablaArchivos.querySelectorAll('a').length > 0);
+          if (!hayArchivoNuevo && !hayArchivosViejos) {
+              return "Falta adjuntar foto del remito.";
+          }
+      }
+      return null;
+  }
+
+  function viaj_valorizarViaje() {
+      const fin = document.getElementById('viaj_inputSalidaDestino').value;
+      if (!fin) { alert("Solo se puede Valorizar un viaje FINALIZADO (Con Fecha Salida Destino)."); return; }
+      
+      let clienteKey = document.getElementById('viaj_inputClienteKey').value;
+      const cta = document.getElementById('viaj_inputCta').value;
+      const sub = document.getElementById('viaj_inputSub').value;
+      if (cta && sub) clienteKey = `${cta}-${sub}`;
+
+      if (!clienteKey) { alert("Falta el Cliente para buscar tarifas."); return; }
+
+      if (!confirm(`¿Buscar y aplicar tarifas para el cliente ${clienteKey}?`)) return;
+
+      document.body.style.cursor = 'wait';
+      google.script.run.withSuccessHandler(res => {
+          document.body.style.cursor = 'default';
+          if (res.success) {
+              if (res.tarifas && res.tarifas.length > 0) {
+                  viaj_aplicarValorizacion(res.tarifas);
+              } else {
+                  alert("El cliente no tiene tarifas asignadas.");
+              }
+          } else {
+              alert("Error: " + res.error);
+          }
+      }).apiGetTarifasParaValorizar(clienteKey);
+  }
+
+  function viaj_aplicarValorizacion(tarifas) {
+      const distKm = parseFloat(document.getElementById('viaj_inputDistancia').value) || 0;
+      const cantPallets = parseFloat(document.getElementById('viaj_inputValorPalletsAux').value) || 0;
+      const cantTN = parseFloat(document.getElementById('viaj_inputValorTnAux').value) || 0;
+
+      let cambios = 0;
+
+      tarifas.forEach(t => {
+          const valorTarifa = parseFloat(t.VALOR) || 0;
+          if (t.TIPO === "Por viaje") { document.getElementById('viaj_inputValorViaje').value = valorTarifa; cambios++; }
+          else if (t.TIPO === "Precio x Km") { const totalKm = distKm * valorTarifa; document.getElementById('viaj_inputKmRecorrido').value = totalKm.toFixed(2); cambios++; }
+          else if (t.TIPO === "Precio x TN") { const totalTn = cantTN * valorTarifa; document.getElementById('viaj_inputValorTn').value = totalTn.toFixed(2); cambios++; }
+          else if (t.TIPO === "Precio x Pallet") { const totalPallets = cantPallets * valorTarifa; document.getElementById('viaj_inputValorPallets').value = totalPallets.toFixed(2); cambios++; }
+          else if (t.TIPO === "Precio x Peaje") { document.getElementById('viaj_inputPeaje').value = valorTarifa; cambios++; }
+      });
+
+      if (cambios > 0) {
+          viaj_calcTotales(); 
+          alert(`Se aplicaron ${cambios} tarifas automáticas.`);
+      }
+  }
+
+  function viaj_toggleControlado() {
+      const chk = document.getElementById('viaj_chkControlado');
+      const estLiq = document.getElementById('viaj_selEstLiq').value;
+
+      if (chk.checked) {
+          const error = viaj_validarRequisitosControlado();
+          if (error) { alert("NO SE PUEDE CONTROLAR:\n" + error); chk.checked = false; return; }
+
+          const totalViaje = parseFloat(document.getElementById('viaj_inputTotal').value) || 0;
+          let clienteKey = document.getElementById('viaj_inputClienteKey').value;
+          const cta = document.getElementById('viaj_inputCta').value;
+          const sub = document.getElementById('viaj_inputSub').value;
+          if (cta && sub) clienteKey = `${cta}-${sub}`;
+
+          if (totalViaje > 0) {
+              viaj_ejecutarControladoYGuardar();
+          } else {
+              if (!clienteKey) {
+                  alert("❌ El viaje vale $0 y no tiene Cliente asignado para buscar tarifas.\nAsigne un cliente o ingrese el valor manualmente.");
+                  chk.checked = false;
+                  return;
+              }
+
+              if (confirm("⚠️ El viaje tiene VALOR $0.\n\n¿Desea buscar tarifas y valorizarlo ahora?\n\n(Si cancela, el viaje NO se controlará).")) {
+                  document.body.style.cursor = 'wait';
+                  google.script.run.withSuccessHandler(res => {
+                      document.body.style.cursor = 'default';
+                      if (res.success && res.tarifas && res.tarifas.length > 0) {
+                          viaj_aplicarValorizacion(res.tarifas);
+                          viaj_ejecutarControladoYGuardar();
+                      } else {
+                          alert("No se encontraron tarifas para este cliente. Ingrese el valor manualmente.");
+                          chk.checked = false;
+                      }
+                  }).apiGetTarifasParaValorizar(clienteKey);
+              } else {
+                  alert("❌ Acción Cancelada.\nEl viaje debe estar valorizado para ser Controlado.");
+                  chk.checked = false;
+              }
+          }
+
+      } else {
+          if (estLiq && estLiq !== "Sin Liquidar") { alert(`ACCESO DENEGADO.\nNo se puede modificar un viaje que ya está '${estLiq}'.`); chk.checked = true; return; }
+          if (confirm("¿Está seguro de quitar el control? El viaje volverá a ser editable.")) {
+              viaj_bloquearFormulario(false);
+              viaj_calcularLogicaEstado();
+          } else {
+              chk.checked = true;
+          }
+      }
+  }
+
+  function viaj_ejecutarControladoYGuardar() {
+      document.getElementById('viaj_inputEstado').value = "Controlado";
+      viaj_bloquearFormulario(true);
+      setTimeout(() => viaj_guardar(), 200); 
+  }
+
+  function viaj_validarCronologia() {
+      const campos = [
+          { name: 'Inicio_Viaje', label: '1. Inicio Viaje' },
+          { name: 'LLegada_Origen', label: '2. Llegada Origen' },
+          { name: 'Salida_Origen', label: '3. Salida Origen' },
+          { name: 'LLegada_destino', label: '4. Llegada Destino' },
+          { name: 'Salida_Destino', label: '5. Salida Destino' }
+      ];
+      let values = [];
+      for (let c of campos) {
+          const el = document.querySelector(`[name="${c.name}"]`);
+          const valStr = el ? el.value : '';
+          const dateObj = valStr ? new Date(valStr) : null;
+          values.push({ date: dateObj, label: c.label });
+      }
+      for (let i = 1; i < values.length; i++) {
+          const actual = values[i];
+          const anterior = values[i-1];
+          if (actual.date && !anterior.date) { alert(`Error de Secuencia: No puede ingresar "${actual.label}" sin haber completado antes "${anterior.label}".`); return false; }
+          if (actual.date && anterior.date && actual.date < anterior.date) { alert(`Error de Cronología: "${actual.label}" no puede ser anterior a "${anterior.label}".`); return false; }
+      }
+      return true;
+  }
+
+  function viaj_ordenarGrilla(n) {
+      if (n === 0) return; 
+      if (viaj_currentSort.col === n) viaj_currentSort.asc = !viaj_currentSort.asc; else { viaj_currentSort.col = n; viaj_currentSort.asc = true; }
+      const table = document.getElementById("viaj_tablaViajes");
+      const rows = Array.from(table.rows).slice(2); 
+      
+      rows.sort((r1, r2) => {
+          let v1 = r1.cells[n].innerText.trim();
+          let v2 = r2.cells[n].innerText.trim();
+          let n1 = parseFloat(v1.replace('$','').replace(/,/g, ''));
+          let n2 = parseFloat(v2.replace('$','').replace(/,/g, ''));
+          const esFecha = (val) => val.includes('/') && val.includes(':') && val.length > 10;
+          
+          if (esFecha(v1) && esFecha(v2)) {
+             const parseF = (f) => { const [fecha, hora] = f.split(' '); const [d, m, y] = fecha.split('/'); return new Date(`${y}-${m}-${d}T${hora}`); };
+             return viaj_currentSort.asc ? parseF(v1) - parseF(v2) : parseF(v2) - parseF(v1);
+          }
+          if (!isNaN(n1) && !isNaN(n2) && v1 !== '' && v2 !== '') return viaj_currentSort.asc ? n1 - n2 : n2 - n1;
+          return viaj_currentSort.asc ? v1.localeCompare(v2) : v2.localeCompare(v1);
+      });
+      const tbody = document.getElementById('viaj_tableBodyViajes');
+      tbody.innerHTML = '';
+      rows.forEach(row => tbody.appendChild(row));
+  }
+
+  function viaj_editar(idViaje) {
+    const row = viaj_viajesDataCache.find(r => viaj_padId(r.Nro_Viaje) === viaj_padId(idViaje));
+    if (!row) { alert("Error: No se encontraron los datos del viaje " + idViaje); return; }
+    
+    const form = document.getElementById('viaj_formViaje');
+    document.getElementById('viaj_actionType').value = 'update';
+    document.getElementById('viaj_fileRemito').value = ""; 
+    
+    viaj_bloquearFormulario(false); 
+    form.reset();
+    
+    for (const [key, value] of Object.entries(row)) {
+       if (form.elements[key]) {
+          if (form.elements[key].type === 'checkbox') form.elements[key].checked = (value === true || String(value).toLowerCase() === 'true');
+          else if (form.elements[key].type === 'datetime-local' && value) form.elements[key].value = viaj_isoDate(value);
+          else form.elements[key].value = value;
+       }
+    }
+
+    viaj_cargarGrillaRemitos(viaj_padId(idViaje));
+
+    const cta = row.Cuenta || row.Cliente_Key;
+    const sub = row.Subcuenta || row.Subcuenta_key;
+
+    if(cta && sub) {
+        document.getElementById('viaj_inputCta').value = cta;
+        document.getElementById('viaj_inputSub').value = sub;
+        document.getElementById('viaj_inputClienteKey').value = cta;
+        document.getElementById('viaj_inputSubKey').value = sub;
+
+        const clienteExacto = viaj_listasGlobales.clientes.find(c => String(c.Cuenta) === String(cta) && String(c.Subcuenta) === String(sub));
+        if (clienteExacto) {
+            document.getElementById('viaj_inputNombreCliente').value = clienteExacto['Razón Social'];
+            const clienteRepresentante = viaj_listasGlobales.clientes.find(c => c['Razón Social'] === clienteExacto['Razón Social']);
+            if (clienteRepresentante) document.getElementById('viaj_selCliente').value = clienteRepresentante.Cliente_key;
+            
+            viaj_actualizarMonedaUI(row.MONEDA || clienteExacto.MONEDA || '$');
+        } else {
+            document.getElementById('viaj_selCliente').value = ""; 
+            if (row.Cliente) document.getElementById('viaj_inputNombreCliente').value = row.Cliente;
+            viaj_actualizarMonedaUI(row.MONEDA || '$');
+        }
+    } else {
+        if (row.Cliente) document.getElementById('viaj_inputNombreCliente').value = row.Cliente;
+        viaj_actualizarMonedaUI(row.MONEDA || '$');
+    }
+
+    viaj_calcTotales(); 
+    viaj_calcDistancia(); 
+    if (document.getElementById('viaj_chkControlado').checked) viaj_bloquearFormulario(true); else viaj_calcularLogicaEstado();
+    new bootstrap.Tab(document.querySelector('#viaj_myTab button[data-bs-target="#viaj_prog"]')).show();
+    new bootstrap.Modal(document.getElementById('viaj_modalViaje')).show();
+  }
+
+  function viaj_cargarGrillaRemitos(idViaje) {
+      const tbody = document.getElementById('viaj_listRemitos');
+      tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Cargando...</td></tr>';
+      google.script.run.withSuccessHandler(res => {
+          tbody.innerHTML = '';
+          if (res.success && res.files.length > 0) res.files.forEach(f => { tbody.innerHTML += `<tr><td><a href="${f.url}" target="_blank" class="text-decoration-none">📄 ${f.name}</a></td><td class="text-muted text-end" style="font-size: 0.7rem;">${f.date}</td></tr>`; });
+          else tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin archivos</td></tr>';
+      }).apiGetRemitos(idViaje);
+  }
+
+  function viaj_isoDate(str) {
+      if (!str) return "";
+      if (str.includes("T")) return str.substring(0, 16);
+      const parts = str.trim().split(" ");
+      if (parts.length < 2) return ""; 
+      const datePart = parts[0]; 
+      const timePart = parts[1];
+      const dmy = datePart.split("/");
+      if (dmy.length !== 3) return ""; 
+      return `${dmy[2]}-${dmy[1].padStart(2,'0')}-${dmy[0].padStart(2,'0')}T${timePart.substring(0,5)}`;
+  }
+
+  function viaj_cargarDatosCliente(desdeSelect) {
+     const sel = document.getElementById('viaj_selCliente');
+     const idSeleccionado = sel.value; 
+
+     if (!idSeleccionado) { 
+        document.getElementById('viaj_inputCta').value = ''; 
+        document.getElementById('viaj_inputSub').value = ''; 
+        document.getElementById('viaj_inputNombreCliente').value = ''; 
+        viaj_actualizarMonedaUI('$');
+        return; 
+     }
+
+     let c = viaj_listasGlobales.clientes.find(cli => String(cli.Cliente_key) === String(idSeleccionado));
+
+     if(c) {
+        const cuentaPrincipal = c.Cuenta;
+        const preferido = viaj_listasGlobales.clientes.find(cli => String(cli.Cuenta) === String(cuentaPrincipal) && (String(cli.Subcuenta) === "1" || String(cli.Subcuenta) === "01" || String(cli.Subcuenta) === "0"));
+        if (preferido) c = preferido;
+
+        document.getElementById('viaj_inputCta').value = c.Cuenta;
+        document.getElementById('viaj_inputSub').value = c.Subcuenta;
+        document.getElementById('viaj_inputClienteKey').value = c.Cuenta; 
+        document.getElementById('viaj_inputSubKey').value = c.Subcuenta; 
+        document.getElementById('viaj_inputNombreCliente').value = c['Razón Social'];
+        
+        viaj_actualizarMonedaUI(c.MONEDA || '$');
+     }
+  }
+
+  function viaj_buscarPorCuenta() {
+      const cta = document.getElementById('viaj_inputCta').value;
+      const sub = document.getElementById('viaj_inputSub').value;
+      if(cta && sub) {
+          const match = viaj_listasGlobales.clientes.find(c => String(c.Cuenta) === String(cta) && String(c.Subcuenta) === String(sub));
+          if(match) {
+             document.getElementById('viaj_inputClienteKey').value = match.Cuenta;
+             document.getElementById('viaj_inputSubKey').value = match.Subcuenta;
+             document.getElementById('viaj_inputNombreCliente').value = match['Razón Social'];
+             viaj_actualizarMonedaUI(match.MONEDA || '$');
+          } else { 
+             document.getElementById('viaj_inputClienteKey').value = cta;
+             document.getElementById('viaj_inputSubKey').value = sub;
+          }
+      }
+  }
+
+  function viaj_inicializarSelects() {
+    const selCli = document.getElementById('viaj_selCliente');
+    selCli.innerHTML = '<option value="">- Seleccionar -</option>';
+    const clientesUnicos = new Set();
+    if(viaj_listasGlobales.clientes) {
+        viaj_listasGlobales.clientes.sort((a, b) => (a['Razón Social'] || '').localeCompare(b['Razón Social'] || ''));
+        viaj_listasGlobales.clientes.forEach(c => {
+           const nombre = c['Razón Social'];
+           if (nombre && !clientesUnicos.has(nombre)) {
+               clientesUnicos.add(nombre);
+               const opt = document.createElement('option');
+               opt.value = c.Cliente_key;
+               opt.text = nombre;
+               selCli.appendChild(opt);
+           }
+        });
+    }
+    viaj_llenarUnSelect('viaj_selChofer', viaj_listasGlobales.choferes, 'Nombre', 'Nombre');
+    viaj_llenarUnSelect('viaj_selOrigen', viaj_listasGlobales.lugares, 'Nombre', 'Nombre');
+    viaj_llenarUnSelect('viaj_selDestino', viaj_listasGlobales.lugares, 'Nombre', 'Nombre');
+    viaj_llenarUnSelect('viaj_selProducto', viaj_listasGlobales.productos, 'NOMBRE', 'NOMBRE');
+    const tr = viaj_listasGlobales.vehiculos.filter(v => v.Tipo_Unidad && v.Tipo_Unidad.toUpperCase().includes('TRACTOR'));
+    const rem = viaj_listasGlobales.vehiculos.filter(v => !v.Tipo_Unidad || !v.Tipo_Unidad.toUpperCase().includes('TRACTOR'));
+    viaj_llenarSelectConData('viaj_selTractorInt', tr, 'Interno', 'Interno', 'data-pat', 'Patente');
+    viaj_llenarSelectConData('viaj_selRemolqueInt', rem, 'Interno', 'Interno', 'data-pat', 'Patente');
+  }
+
+  function viaj_llenarUnSelect(id, data, valKey, txtKey) { const sel = document.getElementById(id); sel.innerHTML = '<option value="">-</option>'; if(data) data.forEach(d => { const opt = document.createElement('option'); opt.value = d[valKey]; opt.text = d[txtKey]; sel.appendChild(opt); }); }
+  function viaj_llenarSelectConData(id, data, valKey, txtKey, dataAttr, dataKey) { const sel = document.getElementById(id); sel.innerHTML = '<option value="">-</option>'; if(data) data.forEach(d => { const opt = document.createElement('option'); opt.value = d[valKey]; opt.text = d[txtKey]; opt.setAttribute(dataAttr, d[dataKey]); sel.appendChild(opt); }); }
+
+  function viaj_filtrarGrilla(colIndex) {
+     const input = document.getElementsByClassName('filter-input')[colIndex - 1]; 
+     const filter = input.value.toUpperCase();
+     const table = document.getElementById("viaj_tablaViajes");
+     const tr = table.getElementsByTagName("tr");
+     for (let i = 2; i < tr.length; i++) {
+        const td = tr[i].getElementsByTagName("td")[colIndex];
+        if (td) {
+           const txtValue = td.textContent || td.innerText;
+           if (txtValue.toUpperCase().indexOf(filter) > -1) tr[i].style.display = ""; else tr[i].style.display = "none";
+        }       
+     }
+  }
+
+  function viaj_calcularLogicaEstado() {
+     if (document.getElementById('viaj_chkControlado').checked) { document.getElementById('viaj_inputEstado').value = "Controlado"; return; }
+     const estadoActual = document.getElementById('viaj_inputEstado').value;
+     if (estadoActual === 'Cancelado') return;
+     const chofer = document.getElementById('viaj_selChofer').value;
+     const tractor = document.getElementById('viaj_selTractorInt').value;
+     const iniViaje = document.getElementById('viaj_inputInicioViaje').value;
+     const finViaje = document.getElementById('viaj_inputSalidaDestino').value;
+     let nuevo = "Sin Asignar";
+     if (chofer && tractor) { nuevo = "Asignado"; if (iniViaje) nuevo = "En Desarrollo"; if (finViaje) nuevo = "Finalizado"; }
+     document.getElementById('viaj_inputEstado').value = nuevo;
+  }
+  function viaj_cancelarViaje() { if (confirm('¿Forzar estado a Cancelado?')) { document.getElementById('viaj_inputEstado').value = "Cancelado"; document.getElementById('viaj_chkControlado').checked = false; } }
+  
+  function viaj_calcTotales() {
+     const vViaje = parseFloat(document.getElementById('viaj_inputValorViaje').value) || 0;
+     const vPeaje = parseFloat(document.getElementById('viaj_inputPeaje').value) || 0;
+     const vKm = parseFloat(document.getElementById('viaj_inputKmRecorrido').value) || 0;
+     const vPallets = parseFloat(document.getElementById('viaj_inputValorPallets').value) || 0;
+     const vTn = parseFloat(document.getElementById('viaj_inputValorTn').value) || 0;
+     const total = vViaje + vPeaje + vKm + vPallets + vTn;
+     document.getElementById('viaj_inputTotal').value = total.toFixed(2);
+     const pagado = parseFloat(document.getElementById('viaj_inputLiq').value) || 0;
+     const pendiente = total - pagado;
+     document.getElementById('viaj_inputPendiente').value = pendiente.toFixed(2);
+     const stLiq = (pagado > 0) ? ((Math.abs(pendiente) < 1) ? "Liquidado" : "Liquidado Parcial") : "Sin Liquidar";
+     document.getElementById('viaj_selEstLiq').value = stLiq;
+  }
+  function viaj_calcDistancia() {
+     const ini = parseFloat(document.getElementById('viaj_inputOdoIni').value) || 0;
+     const fin = parseFloat(document.getElementById('viaj_inputOdoFin').value) || 0;
+     document.getElementById('viaj_inputDistancia').value = (fin > ini) ? (fin - ini).toFixed(0) : 0;
+  }
+  
+  function viaj_consultarGeotab(soloPosicion) {
+     const tractorInt = document.getElementById('viaj_selTractorInt').value;
+     if (!tractorInt) { alert("Seleccione un Tractor primero."); return; }
+     const fIni = document.getElementById('viaj_inputInicioViaje').value;
+     const fFin = document.getElementById('viaj_inputSalidaDestino').value;
+     if (!soloPosicion && (!fIni && !fFin)) { alert("Para calcular Kilómetros necesita ingresar al menos Fecha de Inicio y Fin de viaje."); return; }
+
+     document.body.style.cursor = 'wait';
+     google.script.run.withSuccessHandler(res => {
+          document.body.style.cursor = 'default';
+          if (!res.success) { alert(res.error); return; }
+          if (res.ubicacion) document.getElementById('viaj_inputUbicacion').value = res.ubicacion;
+          if (!soloPosicion) { 
+              if (res.odoInicio > 0) document.getElementById('viaj_inputOdoIni').value = res.odoInicio; 
+              if (res.odoFin > 0) document.getElementById('viaj_inputOdoFin').value = res.odoFin; 
+              viaj_calcDistancia(); viaj_calcTotales();
+          }
+       }).apiGetInfoGeotab(tractorInt, fIni, fFin);
+  }
+
+  function viaj_logicChoferChange() { viaj_cargarDatosChofer(); }
+  function viaj_logicTractorChange() { viaj_cargarPatenteTractor(); }
+  function viaj_cargarDatosChofer() {
+     const nom = document.getElementById('viaj_selChofer').value;
+     const chofer = viaj_listasGlobales.choferes.find(c => c.Nombre === nom);
+     if (chofer) {
+        document.getElementById('viaj_inputCatChofer').value = chofer.CATEGORIA || '';
+        document.getElementById('viaj_inputEmpChofer').value = chofer.NOMBRE_EMPRESA || '';
+        if (chofer.PATENTE_TRACTOR) { const v = viaj_listasGlobales.vehiculos.find(x => x.Patente === chofer.PATENTE_TRACTOR); if (v) { document.getElementById('viaj_selTractorInt').value = v.Interno; document.getElementById('viaj_inputPatTractor').value = v.Patente; } }
+        if (chofer.PATENTE_REMOLQUE) { const v = viaj_listasGlobales.vehiculos.find(x => x.Patente === chofer.PATENTE_REMOLQUE); if (v) { document.getElementById('viaj_selRemolqueInt').value = v.Interno; document.getElementById('viaj_inputPatRemolque').value = v.Patente; } }
+     }
+  }
+  function viaj_cargarPatenteTractor() { const sel = document.getElementById('viaj_selTractorInt'); document.getElementById('viaj_inputPatTractor').value = sel.options[sel.selectedIndex].getAttribute('data-pat') || ''; }
+  function viaj_cargarPatenteRemolque() { const sel = document.getElementById('viaj_selRemolqueInt'); document.getElementById('viaj_inputPatRemolque').value = sel.options[sel.selectedIndex].getAttribute('data-pat') || ''; }
+  function viaj_formatoFechaCorta(f) { if (!f) return ''; const str = String(f); return str.replace('T', ' ').substring(0, 16); }
+  function viaj_padId(id) { if (!id) return ""; return String(id).padStart(8, '0'); }
+  
+  function viaj_abrirModal() { 
+      document.getElementById('viaj_fileRemito').value = ""; 
+      document.getElementById('viaj_listRemitos').innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin archivos</td></tr>'; 
+      document.getElementById('viaj_formViaje').reset(); 
+      document.getElementById('viaj_actionType').value = 'create'; 
+      document.getElementById('viaj_inputNroViaje').value = viaj_padId(viaj_nextIdGlobal); 
+      document.getElementById('viaj_inputEstado').value = "Sin Asignar"; 
+      
+      viaj_actualizarMonedaUI('$'); 
+
+      viaj_bloquearFormulario(false);
+      new bootstrap.Tab(document.querySelector('#viaj_myTab button[data-bs-target="#viaj_prog"]')).show(); 
+      new bootstrap.Modal(document.getElementById('viaj_modalViaje')).show(); 
+  }
+  
+  function viaj_guardar() {
+    const form = document.getElementById('viaj_formViaje');
+    const estabaBloqueado = document.getElementById('viaj_chkControlado').checked;
+    if (estabaBloqueado) viaj_bloquearFormulario(false); 
+
+    if (!form.checkValidity()) { form.reportValidity(); if (estabaBloqueado) viaj_bloquearFormulario(true); return; }
+    
+    const estado = document.getElementById('viaj_inputEstado').value;
+    if (estado !== 'Cancelado' && !viaj_validarCronologia()) { if (estabaBloqueado) viaj_bloquearFormulario(true); return; }
+
+    viaj_calcularLogicaEstado(); 
+    showLoading(true);
+
+    const fileInput = document.getElementById('viaj_fileRemito');
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    const enviarDatos = (extraData) => {
+        const formData = {}; new FormData(form).forEach((val, key) => formData[key] = val);
+        if (extraData) Object.assign(formData, extraData);
+        if (estabaBloqueado) viaj_bloquearFormulario(true);
+
+        google.script.run.withSuccessHandler((res) => { 
+            if (res && res.success) {
+                bootstrap.Modal.getInstance(document.getElementById('viaj_modalViaje')).hide(); 
+                viaj_cargarDatos(); 
+            } else {
+                showLoading(false);
+                if (document.getElementById('viaj_chkControlado').checked) viaj_bloquearFormulario(true);
+                alert("Atención: " + (res.error || "Error al guardar."));
+            }
+        }).withFailureHandler((e) => {
+            showLoading(false);
+            if (document.getElementById('viaj_chkControlado').checked) viaj_bloquearFormulario(true);
+            alert("Error de red: " + e.message);
+        }).apiSaveViaje(usu, formData); 
+    };
+
+    if (fileInput.files.length > 0) { 
+        const file = fileInput.files[0]; 
+        const reader = new FileReader(); 
+        reader.readAsDataURL(file); 
+        reader.onload = function() { enviarDatos({ _fileData: reader.result.split(',')[1], _mimeType: file.type }); }; 
+        reader.onerror = function(e) { showLoading(false); if (estabaBloqueado) viaj_bloquearFormulario(true); alert("Error archivo: " + e); }; 
+    } else { enviarDatos(null); }
+  }
+
+  function viaj_eliminar(id) { 
+      if(!confirm('¿Eliminar viaje ' + id + '?')) return; 
+      showLoading(true); 
+      const usu = sessionStorage.getItem('sys_usuario') || ''; 
+      google.script.run
+          .withSuccessHandler((res) => {
+              if (res.success) {
+                 viaj_cargarDatos();
+              } else {
+                 showLoading(false);
+                 alert("No se pudo eliminar: " + res.error);
+              }
+          })
+          .withFailureHandler(viaj_handleError)
+          .apiDeleteViaje(usu, id); 
+  }
+  
+  function viaj_handleError(e) { showLoading(false); alert("Error de sistema: " + e.message); }
+
+  // ==========================================================
+  // EXPORTAR GRILLA A CSV
+  // ==========================================================
+  function viaj_exportarCSV() {
+      const tabla = document.getElementById('viaj_tablaViajes');
+      if (!tabla) {
+          alert("No se encontró ninguna tabla para exportar.");
+          return;
+      }
+
+      let csvContent = "\ufeff"; // BOM para que Excel reconozca tildes y eñes (UTF-8)
+      const filas = tabla.querySelectorAll('tr');
+
+      filas.forEach(fila => {
+          // Ignorar fila de filtros y mensajes de carga/vacío
+          if (fila.id === 'viaj_filterRow' || fila.innerText.includes('Cargando viajes...') || fila.innerText.includes('No se encontraron viajes')) {
+              return;
+          }
+
+          const celdas = fila.querySelectorAll('th, td');
+          const filaData = [];
+
+          celdas.forEach((celda, index) => {
+              // Ignorar la primera columna (Acciones)
+              if (index === 0) return;
+
+              // Limpiar texto: quitar saltos de línea, símbolo de orden y escapar comillas dobles
+              let texto = celda.innerText.trim().replace(/⇅/g, '').trim().replace(/"/g, '""');
+              
+              // Reemplazar saltos de línea internos por espacios para no romper el CSV
+              texto = texto.replace(/(\r\n|\n|\r)/gm, " "); 
+
+              filaData.push(`"${texto}"`);
+          });
+
+          if (filaData.length > 0) {
+              csvContent += filaData.join(';') + "\n";
+          }
+      });
+
+      // Crear el archivo y forzar la descarga
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      const fechaHoy = new Date().toISOString().split('T')[0];
+      
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Listado_Viajes_${fechaHoy}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  }
+  
+  // --- EJECUCIÓN INMEDIATA SPA ---
+  viaj_initFechas();
+</script>

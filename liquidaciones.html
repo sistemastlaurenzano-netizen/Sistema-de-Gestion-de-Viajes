@@ -1,0 +1,777 @@
+<style>
+    /* --- ESTILOS GENERALES --- */
+    .liq-step-box { background: #fff; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 15px; }
+    .liq-table-selection td { vertical-align: middle; }
+    .liq-input-importe { width: 120px; text-align: right; font-weight: bold; }
+    .liq-badge-moneda { font-size: 0.8rem; margin-left: 5px; }
+    .liq-factura-badge { font-family: monospace; font-size: 0.9rem; letter-spacing: 1px;}
+    
+    #liq_inputTC { background-color: #f8f9fa; border-color: #198754; color: #198754; }
+    #liq_inputTC:focus { background-color: #fff; box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.25); }
+
+    /* ESTILOS MODAL FISCAL */
+    .liq-bg-fiscal { background-color: #f8f9fa; border: 1px solid #e9ecef; }
+    .liq-input-perc { text-align: right; }
+    .liq-input-monto { text-align: right; font-weight: bold; background-color: #e9ecef; }
+    .liq-total-row { font-size: 1.15em; font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 10px; }
+
+    /* --- ESTILOS IMPRESIÓN --- */
+    .liq-a4-sheet {
+        background: white; width: 100%; max-width: 297mm; /* Cambiado a apaisado/ancho para dar más lugar */
+        margin: auto; padding: 15mm;
+        font-family: 'Arial', sans-serif; color: #000; border: 1px solid #ddd; box-sizing: border-box;
+    }
+    .liq-report-header { border-bottom: 2px solid #333; margin-bottom: 15px; padding-bottom: 10px; }
+    .liq-report-title { font-size: 1.3rem; font-weight: bold; text-transform: uppercase; }
+    .liq-report-meta { font-size: 0.85rem; color: #555; text-align: right; }
+    .liq-report-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; table-layout: fixed; }
+    .liq-report-table th { background-color: #f8f9fa !important; border-bottom: 2px solid #000 !important; font-size: 0.75rem; text-align: left; padding: 6px 4px; }
+    .liq-report-table td { font-size: 0.75rem; padding: 4px; border-bottom: 1px solid #eee; vertical-align: middle; }
+    .liq-report-total { font-size: 1.1rem; font-weight: bold; border-top: 2px solid #000; padding-top: 10px; text-align: right; }
+    
+    /* TRUCO PARA UNA SOLA LÍNEA */
+    .liq-tramo-nowrap {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+        width: 100%;
+    }
+
+    @media print {
+        body * { visibility: hidden; }
+        #liq_modalDetalleContent, #liq_modalDetalleContent * { visibility: visible; }
+        #liq_modalDetalleContent { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; box-shadow: none !important; }
+        .liq-no-print { display: none !important; }
+        .modal-dialog { margin: 0; max-width: 100%; }
+        .modal-content { border: none; box-shadow: none; background: white;}
+        /* Orientación apaisada automática para que entren todas las columnas holgadamente */
+        @page { size: A4 landscape; margin: 10mm; }
+    }
+</style>
+
+<h2 class="mb-3">Liquidación de Viajes a Clientes</h2>
+
+<div id="liq_loadingPermisos" class="alert alert-info">
+    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+    Verificando permisos de acceso...
+</div>
+
+<div id="liq_mainContent" class="d-none">
+    
+    <ul class="nav nav-tabs mb-3" id="liq_tabLiquidaciones" role="tablist">
+      <li class="nav-item" id="liq_li-nueva-liq">
+        <button class="nav-link active" id="liq_tab-nueva-liq" data-bs-toggle="tab" data-bs-target="#liq_nueva-content" type="button">✨ Nueva Liquidación</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="liq_tab-historial-liq" data-bs-toggle="tab" data-bs-target="#liq_historial-content" type="button" onclick="liq_cargarHistorial()">📜 Historial y Facturación</button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+      
+      <div class="tab-pane fade show active" id="liq_nueva-content">
+          <div class="liq-step-box bg-light">
+              <div class="row align-items-end g-3">
+                  <div class="col-md-3">
+                      <label class="form-label small fw-bold">Cliente</label>
+                      <select id="liq_selClienteFiltro" class="form-select form-select-sm"><option value="">- Seleccionar Cliente -</option></select>
+                  </div>
+                  <div class="col-md-3">
+                      <label class="form-label small fw-bold">Desde</label>
+                      <input type="date" id="liq_fDesde" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-3">
+                      <label class="form-label small fw-bold">Hasta</label>
+                      <input type="date" id="liq_fHasta" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-3">
+                      <button class="btn btn-primary btn-sm w-100" onclick="liq_buscarViajesPendientes()">🔍 Buscar Pendientes</button>
+                  </div>
+              </div>
+          </div>
+
+          <div id="liq_panelSeleccion" class="d-none">
+              <div class="table-responsive border rounded" style="max-height: 50vh; overflow-y: auto;">
+                  <table class="table table-sm table-hover table-striped mb-0 liq-table-selection">
+                    <thead class="table-dark sticky-top">
+                        <tr>
+                            <th class="text-center"><input type="checkbox" id="liq_chkAll" onchange="liq_toggleAll(this)"></th>
+                            <th>Nro Viaje</th>
+                            <th>Fecha</th>
+                            <th>Cta</th>
+                            <th>Sub</th>
+                            <th>Chofer</th>
+                            <th>DT</th>
+                            <th>Remito</th>
+                            <th>Origen / Destino</th>
+                            <th>Moneda</th>
+                            <th class="text-end">$ Total</th>
+                            <th class="text-end">$ Pendiente</th>
+                            <th class="text-end" style="width: 150px;">A Liquidar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="liq_bodyPendientes"></tbody>
+                  </table>
+              </div>
+              <div class="row mt-3 justify-content-end align-items-center">
+                  <div class="col-auto text-end">
+                      <small class="text-muted d-block">Viajes Seleccionados</small>
+                      <span class="fw-bold fs-5" id="liq_lblCantSel">0</span>
+                  </div>
+                  <div class="col-auto text-end border-start ps-3">
+                      <small class="text-muted d-block">Total a Liquidar</small>
+                      <span class="fw-bold fs-4 text-success" id="liq_lblTotalLiq">0.00</span> <span id="liq_lblMonedaResumen"></span>
+                  </div>
+                  <div class="col-auto ms-3">
+                      <button class="btn btn-success px-4 fw-bold" onclick="liq_confirmarLiquidacion()">✅ Generar Liquidación</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <div class="tab-pane fade" id="liq_historial-content">
+          <div class="liq-step-box bg-light mb-3">
+              <div class="row align-items-end g-2">
+                  <div class="col-md-3">
+                      <label class="form-label small fw-bold">Cliente</label>
+                      <select id="liq_selClienteHistorial" class="form-select form-select-sm"><option value="">- Todos -</option></select>
+                  </div>
+                  <div class="col-md-2">
+                      <label class="form-label small fw-bold">Desde</label>
+                      <input type="date" id="liq_fDesdeHist" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-2">
+                      <label class="form-label small fw-bold">Hasta</label>
+                      <input type="date" id="liq_fHastaHist" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-md-2">
+                       <button class="btn btn-primary btn-sm w-100" onclick="liq_cargarHistorial()">🔍 Buscar</button>
+                  </div>
+                  </div>
+          </div>
+
+          <div class="table-responsive">
+              <table class="table table-bordered table-striped small">
+                  <thead class="table-light">
+                      <tr>
+                          <th>ID Liq.</th>
+                          <th>Fecha</th>
+                          <th>Cliente</th>
+                          <th class="text-center">Cantidad de Viajes</th>
+                          <th class="text-end">Importe Total</th>
+                          <th>Moneda</th>
+                          <th style="min-width: 140px;" class="text-center">Acciones</th>
+                      </tr>
+                  </thead>
+                  <tbody id="liq_bodyHistorial"></tbody>
+              </table>
+          </div>
+      </div>
+    </div>
+</div>
+
+<div class="modal fade" id="liq_modalFactura" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Asignar Factura</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="liq_hdnIdLiq">
+                <div class="alert alert-secondary py-2 mb-3">
+                    <div class="row">
+                        <div class="col-6">Liquidación: <strong id="liq_lblLiqTarget"></strong></div>
+                        <div class="col-6 text-end">Neto: <strong id="liq_lblImporteNeto">-</strong> <span id="liq_lblMonedaLiq"></span></div>
+                    </div>
+                </div>
+
+                <h6 class="border-bottom pb-1 text-primary">1. Datos Comprobante</h6>
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-3">
+                        <label class="form-label small fw-bold">Tipo</label>
+                        <select id="liq_selTipoDoc" class="form-select form-select-sm fw-bold bg-light" onchange="liq_actualizarPreview(); liq_consultarProximoComprobante()">
+                            <option value="FC">FC (Factura)</option>
+                            <option value="ND">ND (Nota Débito)</option>
+                            <option value="NC">NC (Nota Crédito)</option>
+                        </select>
+                    </div>
+                    <div class="col-2">
+                        <label class="form-label small fw-bold">Letra</label>
+                        <select id="liq_selLetra" class="form-select form-select-sm text-center fw-bold" onchange="liq_actualizarPreview(); liq_consultarProximoComprobante()">
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="E">E</option>
+                        </select>
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label small fw-bold">Pto. Venta</label>
+                        <input type="number" id="liq_inputPV" class="form-control form-control-sm text-center" value="00009" onchange="liq_actualizarPreview(); liq_consultarProximoComprobante()">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label small fw-bold">Nro. Comp</label>
+                        <input type="number" id="liq_inputNroComp" class="form-control form-control-sm text-center fw-bold" placeholder="Cargando..." onkeyup="liq_actualizarPreview()">
+                    </div>
+                </div>
+                
+                <div class="row g-2 align-items-end mb-3">
+                    <div class="col-4"><label class="form-label small fw-bold">Fecha</label><input type="date" id="liq_inputFechaFact" class="form-control form-control-sm" onchange="liq_actualizarCotizacion()"></div>
+                    <div class="col-2"><label class="form-label small fw-bold">Moneda</label><input type="text" id="liq_txtMonedaFact" class="form-control form-control-sm fw-bold text-center bg-white" disabled readonly></div>
+                    <div class="col-3"><label class="form-label small fw-bold">Cotización</label><div class="input-group input-group-sm"><input type="number" id="liq_inputTC" class="form-control fw-bold text-end" value="1" step="0.01"><button class="btn btn-outline-secondary" type="button" onclick="liq_actualizarCotizacion()">↻</button></div></div>
+                    <div class="col-3 text-end"><small id="liq_lblInfoTC" class="text-muted fst-italic" style="font-size:0.75rem"></small></div>
+                </div>
+
+                <h6 class="border-bottom pb-1 text-success">2. Detalle Impositivo</h6>
+                <div class="liq-bg-fiscal p-3 rounded">
+                    <div class="row g-2 align-items-center mb-2">
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Condición</label>
+                            <select id="liq_selTipoFiscal" class="form-select form-select-sm" onchange="liq_calcularImpuestos()">
+                                <option value="Gravado">Gravado</option>
+                                <option value="No Gravado">No Gravado</option>
+                                <option value="Exento">Exento</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Alícuota IVA %</label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" id="liq_inputAlicuotaIVA" class="form-control text-end" value="21.00" step="0.5" onchange="liq_calcularImpuestos()">
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small fw-bold">Importe IVA</label>
+                            <input type="text" id="liq_txtImporteIVA" class="form-control form-control-sm liq-input-monto" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row g-1 align-items-center mb-1">
+                        <div class="col-4"><label class="small fw-bold">Perc. CABA</label></div>
+                        <div class="col-3"><div class="input-group input-group-sm"><input type="number" id="liq_pctCaba" class="form-control text-end liq-input-perc" placeholder="0.00" onchange="liq_calcularImpuestos()"><span class="input-group-text">%</span></div></div>
+                        <div class="col-5"><input type="text" id="liq_montoCaba" class="form-control form-control-sm liq-input-monto" readonly></div>
+                    </div>
+                    <div class="row g-1 align-items-center mb-1">
+                        <div class="col-4"><label class="small fw-bold">Perc. BSAS</label></div>
+                        <div class="col-3"><div class="input-group input-group-sm"><input type="number" id="liq_pctBsas" class="form-control text-end liq-input-perc" placeholder="0.00" onchange="liq_calcularImpuestos()"><span class="input-group-text">%</span></div></div>
+                        <div class="col-5"><input type="text" id="liq_montoBsas" class="form-control form-control-sm liq-input-monto" readonly></div>
+                    </div>
+                    <div class="row g-1 align-items-center mb-1">
+                        <div class="col-4"><label class="small fw-bold">Perc. SALTA</label></div>
+                        <div class="col-3"><div class="input-group input-group-sm"><input type="number" id="liq_pctSalta" class="form-control text-end liq-input-perc" placeholder="0.00" onchange="liq_calcularImpuestos()"><span class="input-group-text">%</span></div></div>
+                        <div class="col-5"><input type="text" id="liq_montoSalta" class="form-control form-control-sm liq-input-monto" readonly></div>
+                    </div>
+
+                    <div class="row mt-3 pt-2 liq-total-row text-end">
+                        <div class="col-7">TOTAL FACTURA:</div>
+                        <div class="col-5"><span id="liq_lblTotalFactura" class="text-primary">0.00</span></div>
+                    </div>
+                </div>
+
+                <div class="mt-2 text-center"><small class="text-muted">Vista previa: <span id="liq_lblPreviewFactura" class="fw-bold">-</span></small></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary px-4" onclick="liq_guardarFactura()">💾 Guardar Factura</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="liq_modalDetalle" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header liq-no-print bg-info text-white">
+                <h5 class="modal-title">Detalle de Liquidación</h5>
+                <div>
+                    <button type="button" class="btn btn-light btn-sm fw-bold me-2" onclick="window.print()">🖨️ Imprimir</button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="modal-body bg-light" id="liq_modalDetalleBody">
+                <div id="liq_modalDetalleContent" class="liq-a4-sheet shadow-sm">
+                    <div class="row liq-report-header">
+                        <div class="col-7">
+                            <div class="liq-report-title">Detalle de Liquidación</div>
+                            <div class="fs-5 fw-bold mt-2" id="liq_repCliente">Cliente</div>
+                        </div>
+                        <div class="col-5 text-end liq-report-meta">
+                            <div><strong>ID Liq:</strong> <span id="liq_repId">0</span></div>
+                            <div><strong>Fecha:</strong> <span id="liq_repFecha">00/00/0000</span></div>
+                            <div class="mt-2"><strong>Comprobante:</strong><br><span id="liq_repFactura" class="fs-6">-</span></div>
+                        </div>
+                    </div>
+                    
+                    <table class="liq-report-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">Viaje</th>
+                                <th style="width: 8%;">Fecha</th>
+                                <th style="width: 8%;">Clte Key</th>
+                                <th style="width: 15%;">Chofer</th>
+                                <th style="width: 28%;">Origen ➝ Destino</th>
+                                <th class="text-center" style="width: 5%;">Pall</th>
+                                <th class="text-center" style="width: 6%;">Tn</th>
+                                <th class="text-center" style="width: 5%;">Km</th>
+                                <th style="width: 10%;">Remito</th>
+                                <th class="text-end" style="width: 10%;">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="liq_repBody"></tbody>
+                    </table>
+                    
+                    <div class="row mt-4">
+                        <div class="col-6"><p class="small text-muted">Emitido el: <span id="liq_repPrintDate"></span></p></div>
+                        <div class="col-6 text-end"><div class="liq-report-total">Total Neto: <span id="liq_repMoneda">$</span> <span id="liq_repTotal">0.00</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let liq_listaPendientes = [];
+    let liq_userRole = 'None'; 
+    let liq_importeNetoGlobal = 0;
+
+    function liq_init() {
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        google.script.run.withSuccessHandler(res => {
+            document.getElementById('liq_loadingPermisos').classList.add('d-none');
+            if (!res.success) { document.body.innerHTML = `<div class="alert alert-danger m-3">${res.error}</div>`; return; }
+            liq_userRole = res.role;
+            if (liq_userRole === 'None') { document.body.innerHTML = `<div class="alert alert-warning m-3">⛔ Acceso Denegado.</div>`; return; }
+            document.getElementById('liq_mainContent').classList.remove('d-none');
+            if (liq_userRole !== 'Admin' && liq_userRole !== 'Update' && liq_userRole !== 'Create') {
+                document.getElementById('liq_li-nueva-liq').classList.add('d-none');
+                new bootstrap.Tab(document.getElementById('liq_tab-historial-liq')).show();
+            }
+            const hoy = new Date(); const hace30 = new Date(); hace30.setDate(hoy.getDate() - 30);
+            const sHoy = hoy.toISOString().split('T')[0]; const s30 = hace30.toISOString().split('T')[0];
+            document.getElementById('liq_fDesde').value = s30; document.getElementById('liq_fHasta').value = sHoy;
+            document.getElementById('liq_fDesdeHist').value = s30; document.getElementById('liq_fHastaHist').value = sHoy;
+            liq_cargarClientes();
+        }).apiGetLiquidacionesRole(usu);
+    }
+
+    function liq_cargarClientes() {
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        google.script.run.withSuccessHandler(res => {
+            if(res.success) {
+                const s1 = document.getElementById('liq_selClienteFiltro');
+                const s2 = document.getElementById('liq_selClienteHistorial');
+                s1.innerHTML = '<option value="">- Seleccionar -</option>';
+                s2.innerHTML = '<option value="">- Todos -</option>';
+                const map = new Map();
+                res.data.forEach(c => { if(c.Cuenta && c['Razón Social']) map.set(String(c.Cuenta), c['Razón Social']); });
+                Array.from(map.entries()).sort((a,b)=>a[1].localeCompare(b[1])).forEach(([k,v])=>{
+                    const o1=document.createElement('option'); o1.value=k; o1.text=v; s1.appendChild(o1);
+                    const o2=document.createElement('option'); o2.value=v; o2.text=v; s2.appendChild(o2);
+                });
+            }
+        }).apiGetClientes(usu);
+    }
+
+    function liq_buscarViajesPendientes() {
+        const c = document.getElementById('liq_selClienteFiltro');
+        if(!c.value) { alert("Seleccione Cliente"); return; }
+        c.setAttribute('data-nombre', c.options[c.selectedIndex].text);
+        showLoading(true);
+        document.getElementById('liq_panelSeleccion').classList.add('d-none');
+        
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        const fDesde = document.getElementById('liq_fDesde').value;
+        const fHasta = document.getElementById('liq_fHasta').value;
+
+        google.script.run.withSuccessHandler(res => {
+            showLoading(false);
+            if(!res.success) { alert(res.error); return; }
+            liq_listaPendientes = res.viajes;
+            liq_renderPendientes();
+        }).apiGetViajesPendientes(usu, fDesde, fHasta, c.value);
+    }
+
+    function liq_renderPendientes() {
+        const tb = document.getElementById('liq_bodyPendientes'); tb.innerHTML = '';
+        document.getElementById('liq_lblCantSel').innerText = '0';
+        document.getElementById('liq_lblTotalLiq').innerText = '0.00';
+        document.getElementById('liq_chkAll').checked = false;
+        if(liq_listaPendientes.length === 0) { alert("No hay viajes pendientes."); return; }
+        
+        liq_listaPendientes.forEach((v, i) => {
+            const pend = parseFloat(v['$PendienteLiquidar'])||0;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="text-center"><input type="checkbox" class="liq-chk-viaje" data-idx="${i}" onchange="liq_recalcularTotales()"></td>
+                <td class="fw-bold">${v.Nro_Viaje}</td>
+                <td style="font-size:0.8em">${v.Inicio_Viaje}</td>
+                
+                <td style="font-size:0.8em">${v.Cliente_Key || ''}</td>
+                <td style="font-size:0.8em">${v.Subcuenta_key || ''}</td>
+                <td style="font-size:0.8em" class="text-truncate" style="max-width:100px;" title="${v.Chofer || ''}">${v.Chofer || ''}</td>
+                <td style="font-size:0.8em">${v.DT || ''}</td>
+                <td style="font-size:0.8em">${v.REMITO || ''}</td>
+                
+                <td style="font-size:0.8em" class="text-truncate" style="max-width:150px;">${v.Origen||'?'} ➝ ${v.Destino||'?'}</td>
+                <td class="text-center fw-bold text-secondary">${v.MONEDA||'$'}</td>
+                <td class="text-end small">${v['$ValorTotal']}</td>
+                <td class="text-end fw-bold text-danger">${pend.toFixed(2)}</td>
+                <td class="text-end"><input type="number" class="form-control form-control-sm liq-input-importe" value="${pend.toFixed(2)}" max="${pend}" min="0" step="0.01" data-idx="${i}" onchange="liq_recalcularTotales()" disabled></td>
+            `;
+            tb.appendChild(tr);
+        });
+        document.getElementById('liq_panelSeleccion').classList.remove('d-none');
+    }
+
+    function liq_toggleAll(src) { 
+        document.querySelectorAll('.liq-chk-viaje').forEach(c => c.checked = src.checked); 
+        liq_recalcularTotales(); 
+    }
+    
+    function liq_recalcularTotales() {
+        let t=0, c=0, mRef=null, err=false;
+        document.querySelectorAll('.liq-chk-viaje').forEach(chk => {
+            const idx = chk.dataset.idx;
+            const inp = document.querySelector(`.liq-input-importe[data-idx="${idx}"]`);
+            const mon = liq_listaPendientes[idx].MONEDA||'$';
+            if(chk.checked) {
+                inp.disabled = false;
+                if(mRef===null) mRef=mon;
+                if(mRef!==mon) err=true;
+                let val = parseFloat(inp.value);
+                const max = parseFloat(inp.getAttribute('max'));
+                if(val>max) {val=max; inp.value=max;} if(val<0) {val=0; inp.value=0;}
+                t+=val; c++;
+            } else inp.disabled = true;
+        });
+        document.getElementById('liq_lblCantSel').innerText = c;
+        document.getElementById('liq_lblTotalLiq').innerText = t.toFixed(2);
+        const lMon = document.getElementById('liq_lblMonedaResumen');
+        if(err) { lMon.innerText="⚠️ Error Moneda"; lMon.className="text-danger fw-bold"; }
+        else { lMon.innerText=mRef||''; lMon.className="text-secondary fw-bold"; }
+    }
+
+    function liq_confirmarLiquidacion() {
+        if(document.getElementById('liq_lblMonedaResumen').innerText.includes("Error")) { alert("Monedas mezcladas."); return; }
+        const cant = parseInt(document.getElementById('liq_lblCantSel').innerText);
+        if(cant===0) { alert("Seleccione viajes."); return; }
+        if(!confirm(`¿Liquidar ${cant} viajes?`)) return;
+        
+        const items = [];
+        document.querySelectorAll('.liq-chk-viaje:checked').forEach(chk => {
+            const idx = chk.dataset.idx;
+            items.push({ idViaje: liq_listaPendientes[idx].Nro_Viaje, importe: parseFloat(document.querySelector(`.liq-input-importe[data-idx="${idx}"]`).value), moneda: liq_listaPendientes[idx].MONEDA||'$' });
+        });
+        showLoading(true);
+        
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        const payload = { cliente: document.getElementById('liq_selClienteFiltro').getAttribute('data-nombre'), itemsJSON: JSON.stringify(items) };
+
+        google.script.run.withSuccessHandler(res => {
+            showLoading(false);
+            if(res.success) { alert(`✅ Liquidación ${res.newId} creada.`); document.getElementById('liq_panelSeleccion').classList.add('d-none'); liq_buscarViajesPendientes(); }
+            else alert("Error: "+res.error);
+        }).apiGenerarLiquidacion(usu, payload);
+    }
+
+    function liq_cargarHistorial() {
+        const cli = document.getElementById('liq_selClienteHistorial').value;
+        const d = document.getElementById('liq_fDesdeHist').value;
+        const h = document.getElementById('liq_fHastaHist').value;
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+
+        showLoading(true);
+        google.script.run.withSuccessHandler(res => {
+            showLoading(false);
+            const tb = document.getElementById('liq_bodyHistorial'); tb.innerHTML='';
+            if(!res.data || res.data.length===0) { tb.innerHTML='<tr><td colspan="7" class="text-center text-muted">Sin datos.</td></tr>'; return; }
+            let html='';
+            res.data.forEach(r => {
+                const tieneFact = (r.FACTURA && r.FACTURA.length>5);
+                let acc = `<div class="btn-group"><button class="btn btn-sm btn-outline-info" onclick="liq_verDetalle('${r.ID_LIQUIDACION}')">👁️</button>`;
+                if(tieneFact) acc += `<button class="btn btn-sm btn-success disabled" style="opacity:1;font-family:monospace">${r.FACTURA}</button>`;
+                else if(liq_userRole==='Admin'||liq_userRole==='Update') acc += `<button class="btn btn-sm btn-warning" onclick="liq_abrirModalFactura('${r.ID_LIQUIDACION}')">🧾</button>`;
+                acc += `</div>`;
+                
+                let f = r.FECHA;
+                if(f) { const dd = new Date(f); if(!isNaN(dd.getTime())) f = dd.toLocaleDateString(); }
+                html += `<tr><td class="text-center fw-bold">${r.ID_LIQUIDACION}</td><td>${f}</td><td>${r.CLIENTE||''}</td><td class="text-center">${r.CANT_VIAJES}</td><td class="text-end fw-bold">${parseFloat(r.IMPORTE_TOTAL).toFixed(2)}</td><td class="text-center small">${r.MONEDA}</td><td class="text-center">${acc}</td></tr>`;
+            });
+            tb.innerHTML = html;
+        }).apiGetLiquidacionesHistory(usu, cli, d, h);
+    }
+
+    function liq_consultarProximoComprobante() {
+        const tipo = document.getElementById('liq_selTipoDoc').value;
+        const letra = document.getElementById('liq_selLetra').value;
+        const pv = document.getElementById('liq_inputPV').value;
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+
+        const inputNum = document.getElementById('liq_inputNroComp');
+        inputNum.placeholder = "Buscando...";
+        inputNum.style.opacity = "0.5";
+
+        google.script.run
+            .withSuccessHandler(res => {
+                inputNum.style.opacity = "1";
+                if (res.success) {
+                    inputNum.value = res.proximoNumero;
+                    if (res.ultimaFecha) {
+                        document.getElementById('liq_inputFechaFact').value = res.ultimaFecha;
+                        liq_actualizarCotizacion(); 
+                    }
+                    liq_actualizarPreview();
+                }
+            })
+            .withFailureHandler(e => {
+                inputNum.style.opacity = "1";
+                console.error(e);
+            })
+            .apiGetProximoComprobante(usu, tipo, letra, pv);
+    }
+
+    function liq_abrirModalFactura(idLiq) {
+        showLoading(true);
+        document.getElementById('liq_hdnIdLiq').value = idLiq;
+        document.getElementById('liq_lblLiqTarget').innerText = idLiq;
+        
+        document.getElementById('liq_selTipoDoc').value = 'FC';
+        document.getElementById('liq_selLetra').value = 'A';
+        document.getElementById('liq_inputPV').value = '00009';
+        document.getElementById('liq_inputNroComp').value = '';
+        const hoy = new Date();
+        document.getElementById('liq_inputFechaFact').value = hoy.toISOString().split('T')[0];
+        
+        document.getElementById('liq_lblImporteNeto').innerText = "Cargando...";
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+
+        google.script.run
+            .withSuccessHandler(res => {
+                showLoading(false);
+                
+                if(!res.success) { 
+                    alert("Error al cargar datos: " + res.error); 
+                    return; 
+                }
+                
+                liq_importeNetoGlobal = res.importeNeto;
+                document.getElementById('liq_lblImporteNeto').innerText = liq_importeNetoGlobal.toLocaleString('es-AR', {minimumFractionDigits: 2});
+                document.getElementById('liq_lblMonedaLiq').innerText = res.moneda || '$';
+                document.getElementById('liq_txtMonedaFact').value = res.moneda || '$';
+                
+                document.getElementById('liq_pctCaba').value = res.percepciones.caba.toFixed(2);
+                document.getElementById('liq_pctBsas').value = res.percepciones.bsas.toFixed(2);
+                document.getElementById('liq_pctSalta').value = res.percepciones.salta.toFixed(2);
+                
+                document.getElementById('liq_selTipoFiscal').value = 'Gravado';
+                document.getElementById('liq_inputAlicuotaIVA').value = 21.00;
+                
+                liq_actualizarPreview();
+                liq_actualizarCotizacion(); 
+                liq_calcularImpuestos(); 
+
+                liq_consultarProximoComprobante();
+                
+                const modalEl = document.getElementById('liq_modalFactura');
+                let myModal = bootstrap.Modal.getInstance(modalEl);
+                if (!myModal) {
+                    myModal = new bootstrap.Modal(modalEl);
+                }
+                myModal.show();
+
+                setTimeout(() => {
+                    if(document.getElementById('liq_inputNroComp')) document.getElementById('liq_inputNroComp').focus();
+                }, 500);
+                
+            })
+            .withFailureHandler(error => {
+                showLoading(false);
+                alert("Error de comunicación con el servidor: " + error.message);
+            })
+            .apiGetDatosFiscalesLiq(usu, idLiq);
+        
+        ['liq_selTipoDoc', 'liq_selLetra', 'liq_inputPV', 'liq_inputNroComp'].forEach(id => {
+            const el = document.getElementById(id);
+            if(el) {
+                el.onkeyup = liq_actualizarPreview;
+                el.onchange = liq_actualizarPreview;
+            }
+        });
+    } 
+
+    function liq_calcularImpuestos() {
+        const tipo = document.getElementById('liq_selTipoFiscal').value;
+        const esGravado = (tipo === 'Gravado');
+        const neto = liq_importeNetoGlobal;
+        const inputIVA = document.getElementById('liq_inputAlicuotaIVA');
+        const inputsPerc = document.querySelectorAll('.liq-input-perc');
+        
+        if (!esGravado) {
+            inputIVA.disabled = true;
+            inputsPerc.forEach(i => i.disabled = true);
+            document.getElementById('liq_txtImporteIVA').value = "0.00";
+            document.getElementById('liq_montoCaba').value = "0.00";
+            document.getElementById('liq_montoBsas').value = "0.00";
+            document.getElementById('liq_montoSalta').value = "0.00";
+            document.getElementById('liq_lblTotalFactura').innerText = neto.toLocaleString('es-AR', {minimumFractionDigits: 2});
+            return;
+        }
+
+        inputIVA.disabled = false;
+        inputsPerc.forEach(i => i.disabled = false);
+
+        const pctIVA = parseFloat(inputIVA.value) || 0;
+        const montoIVA = neto * (pctIVA / 100);
+        document.getElementById('liq_txtImporteIVA').value = montoIVA.toFixed(2);
+
+        const pCaba = parseFloat(document.getElementById('liq_pctCaba').value) || 0;
+        const pBsas = parseFloat(document.getElementById('liq_pctBsas').value) || 0;
+        const pSalta = parseFloat(document.getElementById('liq_pctSalta').value) || 0;
+
+        const mCaba = neto * (pCaba / 100);
+        const mBsas = neto * (pBsas / 100);
+        const mSalta = neto * (pSalta / 100);
+
+        document.getElementById('liq_montoCaba').value = mCaba.toFixed(2);
+        document.getElementById('liq_montoBsas').value = mBsas.toFixed(2);
+        document.getElementById('liq_montoSalta').value = mSalta.toFixed(2);
+
+        const total = neto + montoIVA + mCaba + mBsas + mSalta;
+        document.getElementById('liq_lblTotalFactura').innerText = total.toLocaleString('es-AR', {minimumFractionDigits: 2});
+    }
+
+    function liq_actualizarCotizacion() {
+        const moneda = document.getElementById('liq_txtMonedaFact').value;
+        const fecha = document.getElementById('liq_inputFechaFact').value;
+        const lblInfo = document.getElementById('liq_lblInfoTC');
+        const inputTC = document.getElementById('liq_inputTC');
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+
+        if(moneda === '$' || moneda === 'ARS') {
+            inputTC.value = 1; inputTC.disabled = true; lblInfo.innerText = "1:1"; return;
+        }
+
+        inputTC.disabled = false;
+        lblInfo.innerText = "Consultando...";
+        
+        google.script.run.withSuccessHandler(res => {
+            if (res.success && res.valor > 0) {
+                inputTC.value = res.valor; lblInfo.innerText = "Oficial BNA (Día ant)";
+            } else {
+                inputTC.value = 0; lblInfo.innerText = "Manual";
+            }
+        }).apiGetCotizacionOficial(usu, moneda, fecha);
+    }
+
+    function liq_actualizarPreview() {
+        const tipo = document.getElementById('liq_selTipoDoc').value;
+        const l = document.getElementById('liq_selLetra').value;
+        const pv = document.getElementById('liq_inputPV').value.padStart(5,'0');
+        const n = document.getElementById('liq_inputNroComp').value.padStart(8,'0');
+        document.getElementById('liq_lblPreviewFactura').innerText = `${tipo} ${l}-${pv}-${n}`;
+    }
+
+    function liq_guardarFactura() {
+        const id = document.getElementById('liq_hdnIdLiq').value;
+        
+        const tipoDoc = document.getElementById('liq_selTipoDoc').value;
+        const l = document.getElementById('liq_selLetra').value;
+        const pv = document.getElementById('liq_inputPV').value.padStart(5,'0');
+        const n = document.getElementById('liq_inputNroComp').value.padStart(8,'0');
+        const f = document.getElementById('liq_inputFechaFact').value;
+        const tc = document.getElementById('liq_inputTC').value;
+        
+        if(!document.getElementById('liq_inputNroComp').value) { alert("Falta Nro Comp"); return; }
+        if(!f) { alert("Falta Fecha"); return; }
+
+        const datosFiscales = {
+            tipo: document.getElementById('liq_selTipoFiscal').value,
+            ivaPct: parseFloat(document.getElementById('liq_inputAlicuotaIVA').value) || 0,
+            detalle: {
+                iva: document.getElementById('liq_txtImporteIVA').value,
+                percepcionCaba: document.getElementById('liq_montoCaba').value,
+                percepcionBsas: document.getElementById('liq_montoBsas').value,
+                percepcionSalta: document.getElementById('liq_montoSalta').value
+            }
+        };
+
+        const totalFinal = document.getElementById('liq_lblTotalFactura').innerText;
+        const fact = `${l}-${pv}-${n}`;
+        
+        if(!confirm(`Confirmar Comprobante:\n${tipoDoc} ${fact}\nFecha: ${f}\nTotal: ${totalFinal}`)) return;
+        
+        const modalEl = document.getElementById('liq_modalFactura');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+
+        showLoading(true);
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        
+        google.script.run.withSuccessHandler(res => {
+            showLoading(false);
+            
+            if(res.success) { 
+                document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                document.body.classList.remove('modal-open');
+                document.body.style = ''; 
+
+                liq_cargarHistorial(); 
+            }
+            else {
+                alert("Error al guardar: " + res.error);
+            }
+        }).apiAsignarFactura(usu, id, fact, f, tc, datosFiscales, tipoDoc);
+    }
+
+    // --- NUEVA LÓGICA DE DETALLE Y ESTRUCTURA DE TABLA ---
+    function liq_verDetalle(id) {
+        showLoading(true);
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+        google.script.run.withSuccessHandler(res => {
+            showLoading(false);
+            if(!res.success) { alert(res.error); return; }
+            document.getElementById('liq_repId').innerText = res.cabecera.id;
+            document.getElementById('liq_repFecha').innerText = res.cabecera.fecha;
+            document.getElementById('liq_repCliente').innerText = res.cabecera.cliente;
+            const f = res.cabecera.factura;
+            const t = res.cabecera.tipoComp || "FC";
+            const elF = document.getElementById('liq_repFactura');
+            if(f && f.length>5) { elF.innerText= `${t} ${f}`; elF.className="fs-6 fw-bold text-dark"; } else { elF.innerText="(Pendiente)"; elF.className="fs-6 text-muted fst-italic"; }
+            document.getElementById('liq_repMoneda').innerText = res.cabecera.moneda;
+            document.getElementById('liq_repTotal').innerText = res.cabecera.total.toLocaleString('es-AR',{minimumFractionDigits:2});
+            document.getElementById('liq_repPrintDate').innerText = new Date().toLocaleString();
+            
+            const tb = document.getElementById('liq_repBody'); tb.innerHTML='';
+            
+            res.items.forEach(i => {
+                // Extracción robusta de los nuevos campos desde el backend
+                const choferStr = i.chofer || '-';
+                const clienteKeyStr = i.cliente_key || i.clienteKey || i.cliente || '-';
+                
+                // Formateo para forzar 1 sola línea con elipses
+                const tramoLinea = `<span class="liq-tramo-nowrap" title="${i.origen} ➝ ${i.destino}">${i.origen} ➝ ${i.destino}</span>`;
+                const choferLinea = `<span class="liq-tramo-nowrap" title="${choferStr}">${choferStr}</span>`;
+                
+                tb.innerHTML += `
+                <tr>
+                    <td class="text-center fw-bold align-middle">${i.nroViaje}</td>
+                    <td class="align-middle">${i.fecha}</td>
+                    <td class="align-middle text-center">${clienteKeyStr}</td>
+                    <td class="align-middle fw-bold">${choferLinea}</td>
+                    <td class="align-middle small">${tramoLinea}</td>
+                    <td class="text-center align-middle">${i.pallets}</td>
+                    <td class="text-center align-middle">${parseFloat(i.tn).toFixed(2)}</td>
+                    <td class="text-center align-middle">${i.km}</td>
+                    <td class="align-middle small text-truncate">${i.remito}</td>
+                    <td class="text-end fw-bold align-middle">${i.importeAsignado.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+                </tr>`;
+            });
+            new bootstrap.Modal(document.getElementById('liq_modalDetalle')).show();
+        }).apiGetDetalleLiquidacion(usu, id);
+    }
+    
+    if(document.readyState==='complete') liq_init(); else window.addEventListener('load', liq_init);
+</script>

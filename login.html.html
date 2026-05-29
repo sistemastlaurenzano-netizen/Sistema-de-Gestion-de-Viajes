@@ -1,0 +1,51 @@
+<div class="d-flex justify-content-center align-items-center" style="height: 70vh;">
+  <div class="card shadow-lg" style="width: 350px; border-radius: 15px;">
+    <div class="card-header bg-primary text-white text-center">
+      <h4 class="mb-0">🔒 Acceso al Sistema</h4>
+    </div>
+    <div class="card-body">
+      <div id="loginError" class="alert alert-danger d-none small"></div>
+      
+      <form id="formLogin" onsubmit="procesarLogin(event)">
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Usuario / Email</label>
+          <input type="text" id="logUsuario" class="form-control" placeholder="ejemplo@correo.com" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label small fw-bold">PIN de Seguridad</label>
+          <input type="password" id="logPin" class="form-control text-center fs-4" placeholder="••••" maxlength="4" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 fw-bold">INGRESAR</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function procesarLogin(e) {
+    e.preventDefault();
+    const usu = document.getElementById('logUsuario').value;
+    const pin = document.getElementById('logPin').value;
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if(res.success) {
+          // GUARDAMOS EL USUARIO EN LA MEMORIA DEL NAVEGADOR
+          sessionStorage.setItem('sys_usuario', res.usuario);
+          // Redirigimos al sistema
+          navegar('viajes');
+        } else {
+          const errBox = document.getElementById('loginError');
+          errBox.innerText = res.error;
+          errBox.classList.remove('d-none');
+        }
+      })
+      .withFailureHandler(err => {
+        showLoading(false);
+        alert("Error de red: " + err.message);
+      })
+      .apiLoginSistema(usu, pin);
+  }
+</script>

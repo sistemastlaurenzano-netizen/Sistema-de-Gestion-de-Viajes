@@ -1,0 +1,125 @@
+<div class="modal fade" id="rep_chof_modal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">📉 Reporte Liquidación Choferes Propio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body bg-light">
+                <div class="row g-2 align-items-end mb-3 border-bottom pb-3">
+                    <div class="col-md-3"><label class="fw-bold small">Desde</label><input type="date" id="rep_chof_Desde" class="form-control form-control-sm"></div>
+                    <div class="col-md-3"><label class="fw-bold small">Hasta</label><input type="date" id="rep_chof_Hasta" class="form-control form-control-sm"></div>
+                    <div class="col-md-3"><button class="btn btn-primary btn-sm w-100 fw-bold" onclick="rep_chof_consultar()">🔍 Consultar</button></div>
+                    <div class="col-md-3 text-end"><button id="rep_chof_btnExportar" class="btn btn-success btn-sm w-100 fw-bold" onclick="rep_chof_exportarCSV()" disabled>📥 Exportar CSV</button></div>
+                </div>
+
+                <div id="rep_chof_loading" class="alert alert-info d-none text-center"><span class="spinner-border spinner-border-sm"></span> Procesando datos (GPS + Viajes)...</div>
+
+                <div class="table-responsive bg-white border rounded shadow-sm" style="min-height: 300px;">
+                    <table class="table table-sm table-striped table-hover small mb-0" id="rep_chof_tabla">
+                        <thead class="table-dark sticky-top">
+                            <tr>
+                                <th>Legajo</th>
+                                <th>Chofer</th>
+                                <th>Fecha</th>
+                                <th>Día</th>
+                                <th>Feriado</th>
+                                <th>Unidad</th>
+                                <th>Lugar Fin Día</th>
+                                <th class="text-end">Km</th>
+                                <th class="text-end">Control</th>
+                                <th class="text-end">Perm.</th>
+                                <th class="text-end">Rama</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rep_chof_body">
+                            <tr><td colspan="11" class="text-center text-muted py-4">Defina fechas y consulte.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2 text-end text-muted small">Registros: <span id="rep_chof_lblTotalRegs" class="fw-bold">0</span></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let rep_chof_datosActuales = []; 
+
+    // Esta función debe ser llamada desde tu menú principal o botón
+    // Ej: onclick="rep_chof_abrirModal()"
+    function rep_chof_abrirModal() {
+        const date = new Date();
+        const primerDia = new Date(date.getFullYear(), date.getMonth(), 1);
+        const ultimoDia = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        const offset = date.getTimezoneOffset() * 60000;
+        document.getElementById('rep_chof_Desde').value = new Date(primerDia - offset).toISOString().split('T')[0];
+        document.getElementById('rep_chof_Hasta').value = new Date(ultimoDia - offset).toISOString().split('T')[0];
+        rep_chof_datosActuales = [];
+        document.getElementById('rep_chof_body').innerHTML = '<tr><td colspan="11" class="text-center text-muted py-4">Defina fechas y consulte.</td></tr>';
+        document.getElementById('rep_chof_lblTotalRegs').innerText = '0';
+        document.getElementById('rep_chof_btnExportar').disabled = true;
+        new bootstrap.Modal(document.getElementById('rep_chof_modal')).show();
+    }
+
+    function rep_chof_consultar() {
+        const d = document.getElementById('rep_chof_Desde').value;
+        const h = document.getElementById('rep_chof_Hasta').value;
+        if (!d || !h || d > h) { alert("Fechas inválidas"); return; }
+        const loader = document.getElementById('rep_chof_loading');
+        loader.classList.remove('d-none');
+        document.getElementById('rep_chof_btnExportar').disabled = true;
+
+        // Inyección de identidad
+        const usu = sessionStorage.getItem('sys_usuario') || '';
+
+        google.script.run.withSuccessHandler(res => {
+            loader.classList.add('d-none');
+            if (res.success) { 
+                rep_chof_datosActuales = res.data; 
+                rep_chof_renderizarTabla(res.data); 
+            } 
+            else { 
+                alert("Error: " + res.error); 
+                document.getElementById('rep_chof_body').innerHTML = `<tr><td colspan="11" class="text-center text-danger">${res.error}</td></tr>`; 
+            }
+        }).apiGetReporteChoferesData(usu, d, h);
+    }
+
+    function rep_chof_renderizarTabla(data) {
+        const tbody = document.getElementById('rep_chof_body');
+        tbody.innerHTML = '';
+        document.getElementById('rep_chof_lblTotalRegs').innerText = data.length;
+        if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">Sin datos.</td></tr>'; return; }
+        let html = '';
+        data.forEach(r => {
+            const kmStr = parseFloat(r.km).toLocaleString('es-AR', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+            const ramaVis = r.rama === "" ? "-" : r.rama;
+            const lugarVis = r.lugar || "-";
+            html += `<tr>
+                <td>${r.legajo}</td><td>${r.chofer}</td><td>${r.fecha}</td><td>${r.dia}</td><td class="text-center">${r.feriado}</td>
+                <td class="fw-bold text-primary">${r.unidad}</td>
+                <td class="small text-muted" style="max-width:200px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;" title="${lugarVis}">${lugarVis}</td>
+                <td class="text-end fw-bold">${kmStr}</td><td class="text-end">${r.control}</td><td class="text-end">${r.permanencia}</td>
+                <td class="text-end fw-bold bg-light">${ramaVis}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+        document.getElementById('rep_chof_btnExportar').disabled = false;
+    }
+
+    function rep_chof_exportarCSV() {
+        if (!rep_chof_datosActuales || rep_chof_datosActuales.length === 0) { alert("Sin datos."); return; }
+        const encabezado = ["Legajo", "Chofer", "Fecha", "Dia", "Feriado", "Unidad", "Lugar Fin Dia", "Km", "Control", "Perm.", "Rama"];
+        let csv = "\ufeff" + encabezado.join(";") + "\n";
+        rep_chof_datosActuales.forEach(r => {
+            csv += [r.legajo, r.chofer, r.fecha, r.dia, r.feriado, r.unidad, r.lugar, String(r.km).replace('.', ','), r.control, r.permanencia, r.rama].join(";") + "\n";
+        });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+        link.download = `Reporte_${document.getElementById('rep_chof_Desde').value}.csv`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+</script>

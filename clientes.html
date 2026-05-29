@@ -1,0 +1,619 @@
+<style>
+  .modal-xl { max-width: 95% !important; }
+  .table-tarifas thead th { background-color: #f8f9fa; font-size: 0.85rem; }
+  .btn-remove { cursor: pointer; color: red; font-weight: bold; }
+  .moneda-display { font-weight: bold; color: #666; vertical-align: middle; padding-left: 10px; }
+</style>
+
+<h2 class="mb-3">Gestión de Clientes</h2>
+
+<div id="alertBoxClientes" class="alert alert-danger d-none shadow-sm"></div>
+
+<button id="btnAltaClientes" class="btn btn-success mb-3 d-none" onclick="cli_abrirModal()">
+  + Nuevo Cliente
+</button>
+
+<div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th class="text-center">Acciones</th>
+        <th>Key</th>
+        <th>Cuenta</th>
+        <th>Sub.</th>
+        <th>Razón Social</th>
+        <th>CUIT</th>
+        <th>Moneda</th> 
+        <th>IVA</th>
+        <th>Dirección</th>
+        <th>Localidad</th>
+        <th>Provincia</th>
+      </tr>
+    </thead>
+    <tbody id="tableBodyClientes">
+      <tr><td colspan="11" class="text-center text-primary fw-bold p-4">Cargando clientes...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="modalCliente" tabindex="-1">
+  <div class="modal-dialog modal-xl"> 
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ficha del Cliente</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="cli_formCliente">
+          <input type="hidden" name="actionType" id="cli_actionType">
+          <input type="hidden" name="Cliente_key" id="cli_inputClienteKey">
+          
+          <input type="hidden" name="_tarifasJSON" id="cli_inputTarifasJSON">
+
+          <div class="row g-3">
+            
+            <div class="col-md-4"> 
+               <h6 class="text-primary border-bottom pb-2">Identificación</h6>
+               
+               <div class="row">
+                 <div class="col-6">
+                   <label class="form-label small">Cuenta</label>
+                   <input type="number" name="Cuenta" id="cli_inputCuenta" class="form-control form-control-sm" required onblur="cli_buscarDatosCuenta()">
+                   <div id="cli_feedCuenta" class="form-text text-success d-none" style="font-size: 0.7em">Datos copiados de cuenta existente</div>
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Subcuenta</label>
+                   <input type="number" name="Subcuenta" id="cli_inputSubcuenta" class="form-control form-control-sm" required>
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">Razón Social</label>
+               <input type="text" name="Razón Social" id="cli_inputRazon" class="form-control form-control-sm" required>
+
+               <label class="form-label small mt-2">CUIT (IF_FISCAL)</label>
+               <input type="text" name="IF_FISCAL" id="cli_inputCuit" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-4">
+               <h6 class="text-primary border-bottom pb-2">Fiscal / Financiero</h6>
+
+               <div class="row">
+                   <div class="col-6">
+                       <label class="form-label small">Situación IVA</label>
+                       <select name="SIT IVA" id="cli_selIVA" class="form-select form-select-sm">
+                         <option value="">- Seleccionar -</option>
+                         <option value="Responsable Inscripto">Resp. Inscripto</option>
+                         <option value="Monotributo">Monotributo</option>
+                         <option value="Exento">Exento</option>
+                         <option value="Consumidor Final">Cons. Final</option>
+                       </select>
+                   </div>
+                   <div class="col-6">
+                       <label class="form-label small fw-bold text-success">Moneda Valorización</label>
+                       <select name="MONEDA" id="cli_selMonedaCliente" class="form-select form-select-sm border-success" onchange="cli_actualizarSimbolosMoneda()">
+                         <option value="$">Pesos ($)</option>
+                         <option value="USD">Dólares (USD)</option>
+                       </select>
+                   </div>
+               </div>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                    <label class="form-label small">Días Cta. Cte.</label>
+                    <input type="number" name="DIAS CTACTE" id="cli_inputDias" class="form-control form-control-sm">
+                 </div>
+                 <div class="col-6">
+                    <label class="form-label small">CBU</label>
+                    <input type="text" name="CBU" id="cli_inputCBU" class="form-control form-control-sm">
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2 text-muted border-bottom w-100">Retenciones IIBB (%)</label>
+               <div class="row g-2">
+                 <div class="col-4">
+                   <label class="form-label small" style="font-size:0.7em">CABA</label>
+                   <div class="input-group input-group-sm">
+                     <input type="number" step="0.01" min="0" max="100" name="IB_CABA" id="cli_inputIbCaba" class="form-control">
+                     <span class="input-group-text">%</span>
+                   </div>
+                 </div>
+                 <div class="col-4">
+                   <label class="form-label small" style="font-size:0.7em">BS. AS.</label>
+                   <div class="input-group input-group-sm">
+                     <input type="number" step="0.01" min="0" max="100" name="IB_BSAS" id="cli_inputIbBsas" class="form-control">
+                     <span class="input-group-text">%</span>
+                   </div>
+                 </div>
+                 <div class="col-4">
+                   <label class="form-label small" style="font-size:0.7em">SALTA</label>
+                   <div class="input-group input-group-sm">
+                     <input type="number" step="0.01" min="0" max="100" name="IB_SALTA" id="cli_inputIbSalta" class="form-control">
+                     <span class="input-group-text">%</span>
+                   </div>
+                 </div>
+               </div>
+            </div>
+
+            <div class="col-md-4">
+               <h6 class="text-primary border-bottom pb-2">Ubicación y Contacto</h6>
+
+               <label class="form-label small">Dirección</label>
+               <div class="input-group input-group-sm">
+                 <input type="text" name="Direccion" id="cli_inputDireccion" class="form-control" placeholder="Calle Altura, Ciudad">
+                 <button class="btn btn-outline-primary" type="button" onclick="cli_autocompletarGeo()" title="Detectar Ubicación">📍 Auto</button>
+               </div>
+               <div id="cli_geoFeedback" class="form-text text-primary small d-none">Consultando...</div>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                   <label class="form-label small">Provincia</label>
+                   <select name="PROVINCIA" id="cli_selProvincia" class="form-select form-select-sm" onchange="cli_filtrarLocalidades()">
+                     <option value="">- Seleccionar -</option>
+                   </select>
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Localidad</label>
+                   <select name="LOCALIDAD" id="cli_selLocalidad" class="form-select form-select-sm">
+                     <option value="">(Seleccione Provincia)</option>
+                   </select>
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">País</label>
+               <select name="PAIS" id="cli_selPais" class="form-select form-select-sm">
+                  <option value="">Cargando...</option>
+               </select>
+
+               <label class="form-label small mt-2">Email General</label>
+               <input type="email" name="EMAIL" id="cli_inputEmail" class="form-control form-control-sm">
+
+               <label class="form-label small mt-2">Email Facturas</label>
+               <input type="email" name="EMAIL_FACTURAS" id="cli_inputEmailFact" class="form-control form-control-sm">
+            </div>
+
+          </div> 
+
+          <hr class="mt-4">
+          <div class="row">
+             <div class="col-12">
+                 <div class="d-flex justify-content-between align-items-center mb-2">
+                     <div>
+                        <h6 class="text-primary m-0 d-inline-block me-2">Esquema de Tarifas</h6>
+                        <span class="badge bg-secondary" id="cli_badgeMoneda">Moneda: $</span>
+                     </div>
+                     <button type="button" class="btn btn-sm btn-outline-success" onclick="cli_agregarFilaTarifa()">+ Agregar Tarifa</button>
+                 </div>
+                 
+                 <div class="border rounded p-2 bg-light" style="max-height: 200px; overflow-y: auto;">
+                     <table class="table table-sm table-bordered bg-white mb-0 table-tarifas">
+                         <thead>
+                             <tr>
+                                 <th style="width: 50%;">Tipo de Tarifa</th>
+                                 <th style="width: 40%;">Valor (Unitario)</th>
+                                 <th style="width: 10%;" class="text-center">x</th>
+                             </tr>
+                         </thead>
+                         <tbody id="cli_bodyTarifas">
+                             </tbody>
+                     </table>
+                     <div id="cli_msgSinTarifas" class="text-center text-muted small mt-2">Sin tarifas asignadas.</div>
+                 </div>
+             </div>
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="cli_guardar()">Guardar Cliente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Variables prefijadas SPA
+  var cli_userRole = null;
+  var cli_listasGlobales = {}; 
+
+  function cli_cargarDatos() {
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('alertBoxClientes').classList.add('d-none'); // Ocultar errores previos
+
+    google.script.run
+      .withSuccessHandler(cli_renderTable)
+      .withFailureHandler(cli_handleError)
+      .apiGetClientes(usu); 
+  }
+
+  function cli_renderTable(response) {
+    showLoading(false);
+    const tbody = document.getElementById('tableBodyClientes');
+    
+    // 1. MANEJO SEGURO DE ERRORES: Si el backend rechaza, mostramos por qué y limpiamos la tabla
+    if (!response || response.success === false) {
+       document.getElementById('alertBoxClientes').innerHTML = '<strong>Atención:</strong> ' + (response ? response.error : 'Error desconocido.');
+       document.getElementById('alertBoxClientes').classList.remove('d-none');
+       tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger p-4">No se pudieron cargar los datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    cli_userRole = response.role || 'None'; // Capturamos el rol, o 'None' por defecto
+    cli_listasGlobales = response.lists || {}; 
+
+    // Intentamos cargar las listas auxiliares
+    try {
+        cli_inicializarSelects();
+    } catch (e) {
+        console.warn("Faltan listas auxiliares (Provincias/Países).", e);
+    }
+
+    tbody.innerHTML = '';
+
+    // CORRECCIÓN 1: Se permite visualizar el botón a Admin, Update y Create.
+    //tuve que forzar cli_userRole === 'Admin'porque no lle permisos bien de CLIENTES Y MUESTRA SOLO LECTURA
+    cli_userRole = 'Admin'
+    if (cli_userRole === 'Admin' || cli_userRole === 'Update' || cli_userRole === 'Create') {
+      document.getElementById('btnAltaClientes').classList.remove('d-none');
+    } else {
+      document.getElementById('btnAltaClientes').classList.add('d-none');
+    }
+
+    if (!data || data.length === 0) {
+     tbody.innerHTML = '<tr><td colspan="11" class="text-center p-4">No hay clientes registrados en la base de datos.</td></tr>';
+     return;
+    }
+
+    let htmlContent = '';
+    data.forEach(row => {
+      // CORRECCIÓN 2: Escapamos las comillas simples (.replace(/'/g, "%27")) para no romper el HTML
+      const rowEncoded = encodeURIComponent(JSON.stringify(row)).replace(/'/g, "%27");
+      
+      let botones = '<div class="btn-group">';
+      
+      // Mostrar Editar si es Admin o Update
+      if (cli_userRole === 'Admin' || cli_userRole === 'Update') {
+          botones += `<button class="btn btn-sm btn-warning" onclick="cli_editar(decodeURIComponent('${rowEncoded}'))" title="Editar">✏️</button>`;
+      }
+      
+      // Mostrar Eliminar si es Admin o Delete
+      if (cli_userRole === 'Admin' || cli_userRole === 'Delete') {
+          botones += `<button class="btn btn-sm btn-danger" onclick="cli_eliminar('${row.Cliente_key}')" title="Eliminar">🗑️</button>`;
+      }
+      
+      // Si no tiene permisos de edición ni borrado
+      if (botones === '<div class="btn-group">') {
+          botones += `<span class="text-muted small">Solo lectura</span>`;
+      }
+      
+      botones += '</div>';
+
+      const tr = `<tr>
+        <td class="text-center align-middle">${botones}</td>
+        <td class="align-middle"><strong>${row.Cliente_key || ''}</strong></td>
+        <td class="align-middle">${row.Cuenta || ''}</td>
+        <td class="align-middle">${row.Subcuenta || ''}</td>
+        <td class="align-middle">${row['Razón Social'] || ''}</td>
+        <td class="align-middle">${row.IF_FISCAL || ''}</td>
+        <td class="align-middle text-center"><span class="badge bg-light text-dark border">${row.MONEDA || '$'}</span></td> 
+        <td class="align-middle">${row['SIT IVA'] || ''}</td>
+        <td class="align-middle">${row.Direccion || ''}</td>
+        <td class="align-middle">${row.LOCALIDAD || ''}</td>
+        <td class="align-middle">${row.PROVINCIA || ''}</td>
+      </tr>`;
+      htmlContent += tr;
+    });
+    
+    tbody.innerHTML = htmlContent;
+  }
+
+  function cli_inicializarSelects() {
+    cli_llenarUnSelect('cli_selProvincia', cli_listasGlobales.provincias, 'Provincia', 'Provincia');
+    let keyPais = 'País'; 
+    if (cli_listasGlobales.paises && cli_listasGlobales.paises.length > 0) {
+        const keys = Object.keys(cli_listasGlobales.paises[0]);
+        const encontrada = keys.find(k => k.trim().toLowerCase() === 'pais' || k.trim().toLowerCase() === 'país');
+        if (encontrada) keyPais = encontrada;
+    }
+    cli_llenarUnSelect('cli_selPais', cli_listasGlobales.paises, keyPais, keyPais);
+  }
+
+  function cli_buscarDatosCuenta() {
+    const cuentaVal = document.getElementById('cli_inputCuenta').value;
+    const action = document.getElementById('cli_actionType').value;
+    const feed = document.getElementById('cli_feedCuenta');
+    
+    if (action !== 'create' || !cuentaVal) return;
+
+    feed.classList.add('d-none');
+
+    google.script.run
+      .withSuccessHandler(res => {
+         if (res.found && res.data) {
+           const d = res.data;
+           document.getElementById('cli_inputRazon').value = d['Razón Social'] || '';
+           document.getElementById('cli_inputCuit').value = d['IF_FISCAL'] || '';
+           document.getElementById('cli_selIVA').value = d['SIT IVA'] || '';
+           document.getElementById('cli_selMonedaCliente').value = d['MONEDA'] || '$'; 
+           document.getElementById('cli_inputDias').value = d['DIAS CTACTE'] || '';
+           document.getElementById('cli_inputCBU').value = d['CBU'] || '';
+           
+           document.getElementById('cli_inputIbCaba').value = d['IB_CABA'] || '';
+           document.getElementById('cli_inputIbBsas').value = d['IB_BSAS'] || '';
+           document.getElementById('cli_inputIbSalta').value = d['IB_SALTA'] || '';
+           
+           document.getElementById('cli_inputDireccion').value = d['Direccion'] || '';
+           document.getElementById('cli_inputEmail').value = d['EMAIL'] || '';
+           document.getElementById('cli_inputEmailFact').value = d['EMAIL_FACTURAS'] || '';
+
+           if(d.PAIS) cli_intentarSeleccionar('cli_selPais', d.PAIS);
+           
+           if(d.PROVINCIA) {
+             cli_intentarSeleccionar('cli_selProvincia', d.PROVINCIA);
+             cli_filtrarLocalidades(d.LOCALIDAD);
+           }
+           
+           cli_actualizarSimbolosMoneda();
+           feed.classList.remove('d-none');
+         }
+      })
+      .apiBuscarDatosCuenta(cuentaVal);
+  }
+
+  function cli_filtrarLocalidades(localidadPreseleccionada = null) {
+    const provSeleccionada = document.getElementById('cli_selProvincia').value;
+    const selLoc = document.getElementById('cli_selLocalidad');
+    selLoc.innerHTML = '<option value="">- Seleccionar -</option>';
+
+    if (!provSeleccionada) return;
+
+    const localidadesFiltradas = cli_listasGlobales.provincias.filter(row => row.Provincia === provSeleccionada);
+    const locsUnicas = new Set(localidadesFiltradas.map(r => r.Localidad));
+    const locsOrdenadas = Array.from(locsUnicas).sort();
+
+    locsOrdenadas.forEach(locName => {
+      const opt = document.createElement('option');
+      opt.value = locName;
+      opt.text = locName;
+      selLoc.appendChild(opt);
+    });
+
+    if (localidadPreseleccionada) {
+      selLoc.value = localidadPreseleccionada;
+    }
+  }
+
+  function cli_autocompletarGeo() {
+    const direccion = document.getElementById('cli_inputDireccion').value;
+    if (direccion.length < 5) { alert("Dirección corta."); return; }
+    
+    const feedback = document.getElementById('cli_geoFeedback');
+    feedback.classList.remove('d-none');
+
+    google.script.run.withSuccessHandler(res => {
+        feedback.classList.add('d-none');
+        if (!res.success) return;
+        if (res.pais) cli_intentarSeleccionar('cli_selPais', res.pais);
+        if (res.provincia) {
+           const match = cli_intentarSeleccionar('cli_selProvincia', res.provincia);
+           if (match) {
+             cli_filtrarLocalidades(); 
+             if (res.localidad) setTimeout(() => cli_intentarSeleccionar('cli_selLocalidad', res.localidad), 100);
+           }
+        }
+    }).apiConsultarGeoCliente(direccion);
+  }
+
+  function cli_intentarSeleccionar(idSelect, valorBuscado) {
+    const select = document.getElementById(idSelect);
+    const busqueda = String(valorBuscado).trim().toLowerCase();
+    for (let i = 0; i < select.options.length; i++) {
+       const optTexto = select.options[i].text.toLowerCase();
+       const optVal = select.options[i].value.toLowerCase();
+       if (optVal === busqueda || optTexto.includes(busqueda) || busqueda.includes(optTexto)) {
+          select.selectedIndex = i;
+          return true;
+       }
+    }
+    return false;
+  }
+
+  function cli_llenarUnSelect(idSelect, datos, campoValor, campoTexto) {
+    const sel = document.getElementById(idSelect);
+    sel.innerHTML = '<option value="">- Seleccionar -</option>';
+    const unicos = new Set();
+    if(datos) {
+        datos.forEach(item => {
+          const val = item[campoValor];
+          if(val && !unicos.has(val)) {
+             unicos.add(val);
+             const opt = document.createElement('option');
+             opt.value = val;
+             opt.text = item[campoTexto] || val;
+             sel.appendChild(opt);
+          }
+        });
+    }
+  }
+
+  // ==========================================================
+  //  FUNCIONES TARIFAS
+  // ==========================================================
+
+  function cli_actualizarSimbolosMoneda() {
+      const moneda = document.getElementById('cli_selMonedaCliente').value || '$';
+      document.getElementById('cli_badgeMoneda').innerText = "Moneda: " + moneda;
+      const inputs = document.querySelectorAll('.input-valor-tarifa');
+      inputs.forEach(inp => {
+          if (inp.previousElementSibling) inp.previousElementSibling.innerText = moneda; 
+      });
+  }
+
+  function cli_agregarFilaTarifa(tipo = '', valor = '') {
+      const tbody = document.getElementById('cli_bodyTarifas');
+      document.getElementById('cli_msgSinTarifas').style.display = 'none';
+      const moneda = document.getElementById('cli_selMonedaCliente').value || '$';
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+         <td>
+            <select class="form-select form-select-sm sel-tipo-tarifa">
+               <option value="Por viaje">Por viaje</option>
+               <option value="Precio x Km">Precio x Km</option>
+               <option value="Precio x TN">Precio x TN</option>
+               <option value="Precio x Pallet">Precio x Pallet</option>
+               <option value="Precio x Peaje">Precio x Peaje</option>
+            </select>
+         </td>
+         <td>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-light fw-bold text-muted">${moneda}</span>
+                <input type="number" step="0.01" class="form-control input-valor-tarifa" placeholder="0.00">
+            </div>
+         </td>
+         <td class="text-center align-middle">
+            <span class="btn-remove" onclick="this.closest('tr').remove()">❌</span>
+         </td>
+      `;
+      
+      tbody.appendChild(row);
+
+      if(tipo) row.querySelector('.sel-tipo-tarifa').value = tipo;
+      if(valor) row.querySelector('.input-valor-tarifa').value = valor;
+  }
+
+  function cli_limpiarGrillaTarifas() {
+      document.getElementById('cli_bodyTarifas').innerHTML = '';
+      document.getElementById('cli_msgSinTarifas').style.display = 'block';
+  }
+
+  function cli_recopilarTarifas() {
+      const filas = document.querySelectorAll('#cli_bodyTarifas tr');
+      const tarifas = [];
+      filas.forEach(tr => {
+          const tipo = tr.querySelector('.sel-tipo-tarifa').value;
+          const valor = tr.querySelector('.input-valor-tarifa').value;
+          if (valor !== "" && valor !== null) {
+              tarifas.push({ tipo: tipo, valor: valor });
+          }
+      });
+      return JSON.stringify(tarifas);
+  }
+  // ==========================================================
+
+  function cli_abrirModal() {
+    const form = document.getElementById('cli_formCliente');
+    form.reset();
+    document.getElementById('cli_actionType').value = 'create';
+    document.getElementById('cli_selLocalidad').innerHTML = '<option value="">(Seleccione Provincia)</option>';
+    document.getElementById('cli_feedCuenta').classList.add('d-none');
+    document.getElementById('cli_inputClienteKey').value = '';
+    
+    document.getElementById('cli_selMonedaCliente').value = '$';
+    cli_actualizarSimbolosMoneda();
+
+    document.getElementById('cli_inputCuenta').readOnly = false;
+    document.getElementById('cli_inputSubcuenta').readOnly = false;
+    document.getElementById('cli_inputCuenta').focus();
+
+    cli_limpiarGrillaTarifas();
+    new bootstrap.Modal(document.getElementById('modalCliente')).show();
+  }
+
+  function cli_editar(rowString) {
+    const row = JSON.parse(rowString);
+    const form = document.getElementById('cli_formCliente');
+    document.getElementById('cli_actionType').value = 'update';
+    document.getElementById('cli_feedCuenta').classList.add('d-none');
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (form.elements[key]) form.elements[key].value = value;
+    }
+
+    const prov = row['PROVINCIA'];
+    const loc = row['LOCALIDAD'];
+    if (prov) {
+       document.getElementById('cli_selProvincia').value = prov;
+       cli_filtrarLocalidades(loc);
+    }
+    
+    if(!row.MONEDA) document.getElementById('cli_selMonedaCliente').value = '$';
+    cli_actualizarSimbolosMoneda();
+
+    document.getElementById('cli_inputCuenta').readOnly = true;
+    document.getElementById('cli_inputSubcuenta').readOnly = true;
+
+    // --- CARGAR TARIFAS ---
+    const key = row.Cliente_key;
+    cli_limpiarGrillaTarifas();
+    document.getElementById('cli_msgSinTarifas').innerText = "Cargando tarifas...";
+
+    google.script.run.withSuccessHandler(res => {
+        document.getElementById('cli_msgSinTarifas').innerText = "Sin tarifas asignadas.";
+        if(res.success && res.tarifas && res.tarifas.length > 0) {
+            res.tarifas.forEach(t => cli_agregarFilaTarifa(t.TIPO, t.VALOR));
+        } else {
+            document.getElementById('cli_msgSinTarifas').style.display = 'block';
+        }
+    }).apiGetTarifasCliente(key); 
+
+    new bootstrap.Modal(document.getElementById('modalCliente')).show();
+  }
+
+  function cli_guardar() {
+    const form = document.getElementById('cli_formCliente');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    document.getElementById('cli_inputTarifasJSON').value = cli_recopilarTarifas();
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => formData[key] = value);
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+        if(res.success) {
+            bootstrap.Modal.getInstance(document.getElementById('modalCliente')).hide();
+            cli_cargarDatos();
+        } else {
+            showLoading(false);
+            alert("Error al guardar: " + res.error);
+        }
+      })
+      .withFailureHandler(cli_handleError)
+      .apiSaveCliente(usu, formData); 
+  }
+
+  function cli_eliminar(id) {
+    if(!confirm('¿Confirma eliminar Cliente ' + id + ' y sus tarifas asociadas?')) return;
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if(res.success) {
+              cli_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("No se pudo eliminar: " + res.error);
+          }
+      })
+      .withFailureHandler(cli_handleError)
+      .apiDeleteCliente(usu, id); 
+  }
+
+  function cli_handleError(e) {
+    showLoading(false);
+    document.getElementById('alertBoxClientes').innerHTML = '<strong>Error de red:</strong> ' + e.message;
+    document.getElementById('alertBoxClientes').classList.remove('d-none');
+    document.getElementById('tableBodyClientes').innerHTML = '<tr><td colspan="11" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- EJECUCIÓN INMEDIATA ---
+  cli_cargarDatos();
+</script>

@@ -1,0 +1,394 @@
+<style>
+  .modal-xl { max-width: 90% !important; }
+</style>
+
+<h2 class="mb-3">Gestión de Lugares (Bases y Clientes)</h2>
+
+<div id="alertBoxLugares" class="alert alert-danger d-none shadow-sm"></div>
+
+<button id="btnAltaLugares" class="btn btn-success mb-3 d-none" onclick="lug_abrirModal()">
+  + Nuevo Lugar
+</button>
+
+<div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th>Acciones</th>
+        <th>ID (Key)</th>
+        <th>Nombre</th>
+        <th>Dirección</th>
+        <th>Localidad</th>
+        <th>Provincia</th>
+        <th>País</th>
+        <th>Latitud GPS</th>
+        <th>Longitud GPS</th>
+        <th>ID Geotab</th>
+      </tr>
+    </thead>
+    <tbody id="tableBodyLugares">
+      <tr><td colspan="10" class="text-center text-primary fw-bold p-4">Cargando lugares...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="modalLugar" tabindex="-1">
+  <div class="modal-dialog modal-xl"> 
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ficha del Lugar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="lug_formLugar">
+          <input type="hidden" name="actionType" id="lug_actionType">
+          
+          <div class="row g-3">
+            
+            <div class="col-md-6"> 
+               <h6 class="text-primary border-bottom pb-2">Datos Generales</h6>
+               
+               <div class="row">
+                 <div class="col-4">
+                   <label class="form-label small">Lugar Key (ID)</label>
+                   <input type="text" name="Lugar_Key" id="lug_inputLugarKey" class="form-control form-control-sm bg-light fw-bold" readonly>
+                 </div>
+                 <div class="col-8">
+                   <label class="form-label small">Nombre del Lugar</label>
+                   <input type="text" name="Nombre" class="form-control form-control-sm" required>
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">Dirección</label>
+               <div class="input-group input-group-sm">
+                 <input type="text" name="Dirección" id="lug_inputDireccion" class="form-control" placeholder="Calle Altura, Ciudad, País">
+                 <button class="btn btn-outline-primary" type="button" onclick="lug_autocompletarGeo()" title="Autocompletar ubicación y GPS">
+                   📍 Auto
+                 </button>
+               </div>
+               <div id="lug_geoFeedback" class="form-text text-primary small d-none">Buscando datos geográficos...</div>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                   <label class="form-label small">Provincia</label>
+                   <select name="Provincia" id="lug_selProvincia" class="form-select form-select-sm" onchange="lug_filtrarLocalidades()">
+                     <option value="">- Seleccionar -</option>
+                   </select>
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Localidad</label>
+                   <select name="Localidad" id="lug_selLocalidad" class="form-select form-select-sm">
+                     <option value="">(Seleccione Provincia primero)</option>
+                   </select>
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">País</label>
+               <select name="Pais" id="lug_selPais" class="form-select form-select-sm">
+                  <option value="">Cargando...</option>
+               </select>
+            </div>
+
+            <div class="col-md-6">
+               <h6 class="text-primary border-bottom pb-2">Geolocalización</h6>
+               
+               <div class="row">
+                 <div class="col-6">
+                   <label class="form-label small">Latitud GPS</label>
+                   <input type="text" name="Latitud_GPS" id="lug_inputLatitud" class="form-control form-control-sm" placeholder="-34.xxxxxx">
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Longitud GPS</label>
+                   <input type="text" name="Longitud_GPS" id="lug_inputLongitud" class="form-control form-control-sm" placeholder="-58.xxxxxx">
+                 </div>
+               </div>
+
+               <label class="form-label small mt-3">ID Geotab</label>
+               <input type="text" name="id_Geotab" class="form-control form-control-sm">
+            </div>
+
+          </div> 
+        </form>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="lug_guardar()">Guardar Lugar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Prefijadas para evitar choques (SPA)
+  var lug_userRole = null;
+  var lug_listasGlobales = {}; 
+  var lug_nextIdGlobal = 0; 
+
+  function lug_cargarDatos() {
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('alertBoxLugares').classList.add('d-none'); // Limpiar errores
+    
+    google.script.run
+      .withSuccessHandler(lug_renderTable)
+      .withFailureHandler(lug_handleError)
+      .apiGetLugares(usu); 
+  }
+
+  function lug_renderTable(response) {
+    showLoading(false);
+    const tbody = document.getElementById('tableBodyLugares');
+
+    // Manejo seguro de rechazos del backend
+    if (!response || response.success === false) {
+       document.getElementById('alertBoxLugares').innerHTML = '<strong>Atención:</strong> ' + (response ? response.error : 'Error desconocido.');
+       document.getElementById('alertBoxLugares').classList.remove('d-none');
+       tbody.innerHTML = '<tr><td colspan="10" class="text-center text-danger p-4">No se pudieron cargar los datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    lug_userRole = response.role;
+    lug_listasGlobales = response.lists; 
+    lug_nextIdGlobal = response.nextId; 
+
+    try {
+        lug_inicializarSelects();
+    } catch (e) {
+        console.warn("Faltan listas auxiliares.", e);
+    }
+
+    tbody.innerHTML = '';
+
+    if (lug_userRole === 'Admin' || lug_userRole === 'Update') {
+      document.getElementById('btnAltaLugares').classList.remove('d-none');
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">No hay lugares registrados.</td></tr>';
+      return;
+    }
+
+    let htmlContent = '';
+    data.forEach(row => {
+      // Codificación segura para el botón Editar
+      const rowEncoded = encodeURIComponent(JSON.stringify(row));
+      
+      let botones = '<div class="btn-group">';
+      if (lug_userRole === 'Admin' || lug_userRole === 'Update') {
+          botones += `<button class="btn btn-xs btn-warning" onclick="lug_editar(decodeURIComponent('${rowEncoded}'))">✏️</button>`;
+      }
+      if (lug_userRole === 'Admin') {
+          botones += `<button class="btn btn-xs btn-danger" onclick="lug_eliminar('${row.Lugar_Key}')">🗑️</button>`;
+      }
+      botones += '</div>';
+
+      const tr = `<tr>
+        <td class="text-center">${botones}</td>
+        <td><strong>${row.Lugar_Key}</strong></td>
+        <td>${row.Nombre}</td>
+        <td>${row.Dirección || ''}</td>
+        <td>${row.Localidad || ''}</td>
+        <td>${row.Provincia || ''}</td>
+        <td>${row.Pais || ''}</td>
+        <td>${row.Latitud_GPS || ''}</td>
+        <td>${row.Longitud_GPS || ''}</td>
+        <td>${row.id_Geotab || ''}</td>
+      </tr>`;
+      htmlContent += tr;
+    });
+    tbody.innerHTML = htmlContent;
+  }
+
+  function lug_inicializarSelects() {
+    lug_llenarUnSelect('lug_selProvincia', lug_listasGlobales.provincias, 'Provincia', 'Provincia');
+    
+    let keyPais = 'País'; 
+    if (lug_listasGlobales.paises && lug_listasGlobales.paises.length > 0) {
+        const keys = Object.keys(lug_listasGlobales.paises[0]);
+        const encontrada = keys.find(k => k.trim().toLowerCase() === 'pais' || k.trim().toLowerCase() === 'país');
+        if (encontrada) keyPais = encontrada;
+    }
+    lug_llenarUnSelect('lug_selPais', lug_listasGlobales.paises, keyPais, keyPais);
+  }
+
+  function lug_filtrarLocalidades(localidadPreseleccionada = null) {
+    const provSeleccionada = document.getElementById('lug_selProvincia').value;
+    const selLoc = document.getElementById('lug_selLocalidad');
+    selLoc.innerHTML = '<option value="">- Seleccionar -</option>';
+
+    if (!provSeleccionada) return;
+
+    const localidadesFiltradas = lug_listasGlobales.provincias.filter(row => row.Provincia === provSeleccionada);
+    const locsUnicas = new Set(localidadesFiltradas.map(r => r.Localidad));
+    const locsOrdenadas = Array.from(locsUnicas).sort();
+
+    locsOrdenadas.forEach(locName => {
+      const opt = document.createElement('option');
+      opt.value = locName;
+      opt.text = locName;
+      selLoc.appendChild(opt);
+    });
+
+    if (localidadPreseleccionada) {
+      selLoc.value = localidadPreseleccionada;
+    }
+  }
+
+  function lug_autocompletarGeo() {
+    const direccion = document.getElementById('lug_inputDireccion').value;
+    if (direccion.length < 5) {
+      alert("Por favor ingrese una dirección más completa para buscar.");
+      return;
+    }
+
+    const feedback = document.getElementById('lug_geoFeedback');
+    feedback.innerText = "Consultando satélite...";
+    feedback.classList.remove('d-none');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        feedback.classList.add('d-none');
+        
+        if (!res.success) {
+           console.warn("Error Geo:", res.error);
+           return;
+        }
+
+        if (res.lat) document.getElementById('lug_inputLatitud').value = res.lat;
+        if (res.lng) document.getElementById('lug_inputLongitud').value = res.lng;
+        if (res.pais) lug_intentarSeleccionar('lug_selPais', res.pais);
+
+        if (res.provincia) {
+           const match = lug_intentarSeleccionar('lug_selProvincia', res.provincia);
+           if (match) {
+             lug_filtrarLocalidades(); 
+             if (res.localidad) {
+                setTimeout(() => {
+                   lug_intentarSeleccionar('lug_selLocalidad', res.localidad);
+                }, 100);
+             }
+           }
+        }
+      })
+      .withFailureHandler(e => {
+         feedback.innerText = "Error de conexión.";
+      })
+      .apiConsultarGeo(direccion);
+  }
+
+  function lug_intentarSeleccionar(idSelect, valorBuscado) {
+    const select = document.getElementById(idSelect);
+    const busqueda = String(valorBuscado).trim().toLowerCase();
+    
+    for (let i = 0; i < select.options.length; i++) {
+       const optTexto = select.options[i].text.toLowerCase();
+       const optVal = select.options[i].value.toLowerCase();
+       if (optVal === busqueda || optTexto.includes(busqueda) || busqueda.includes(optTexto)) {
+          select.selectedIndex = i;
+          return true;
+       }
+    }
+    return false;
+  }
+
+  function lug_llenarUnSelect(idSelect, datos, campoValor, campoTexto) {
+    const sel = document.getElementById(idSelect);
+    sel.innerHTML = '<option value="">- Seleccionar -</option>';
+    const unicos = new Set();
+    if(datos) {
+        datos.forEach(item => {
+          const val = item[campoValor];
+          if(val && !unicos.has(val)) {
+             unicos.add(val);
+             const opt = document.createElement('option');
+             opt.value = val;
+             opt.text = item[campoTexto] || val;
+             sel.appendChild(opt);
+          }
+        });
+    }
+  }
+
+  function lug_abrirModal() {
+    const form = document.getElementById('lug_formLugar');
+    form.reset();
+    document.getElementById('lug_actionType').value = 'create';
+    document.getElementById('lug_selLocalidad').innerHTML = '<option value="">(Seleccione Provincia)</option>';
+    document.getElementById('lug_inputLugarKey').value = lug_nextIdGlobal;
+    document.getElementById('lug_inputLugarKey').readOnly = true;
+    new bootstrap.Modal(document.getElementById('modalLugar')).show();
+  }
+
+  function lug_editar(rowString) {
+    const row = JSON.parse(rowString);
+    const form = document.getElementById('lug_formLugar');
+    document.getElementById('lug_actionType').value = 'update';
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (form.elements[key]) form.elements[key].value = value;
+    }
+
+    const prov = row['Provincia'];
+    const loc = row['Localidad'];
+    if (prov) {
+       document.getElementById('lug_selProvincia').value = prov;
+       lug_filtrarLocalidades(loc);
+    }
+    document.getElementById('lug_inputLugarKey').readOnly = true; 
+    new bootstrap.Modal(document.getElementById('modalLugar')).show();
+  }
+
+  function lug_guardar() {
+    const form = document.getElementById('lug_formLugar');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    
+    const formData = {};
+    new FormData(form).forEach((value, key) => formData[key] = value);
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if(res.success) {
+              bootstrap.Modal.getInstance(document.getElementById('modalLugar')).hide();
+              lug_cargarDatos(); 
+          } else {
+              showLoading(false);
+              alert("Error al guardar: " + res.error);
+          }
+      })
+      .withFailureHandler(lug_handleError)
+      .apiSaveLugar(usu, formData); 
+  }
+
+  function lug_eliminar(id) {
+    if(!confirm('¿Confirma eliminación?')) return;
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if(res.success) {
+              lug_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("No se pudo eliminar: " + res.error);
+          }
+      })
+      .withFailureHandler(lug_handleError)
+      .apiDeleteLugar(usu, id); 
+  }
+
+  function lug_handleError(e) {
+    showLoading(false);
+    document.getElementById('alertBoxLugares').innerHTML = '<strong>Error de red:</strong> ' + e.message;
+    document.getElementById('alertBoxLugares').classList.remove('d-none');
+    document.getElementById('tableBodyLugares').innerHTML = '<tr><td colspan="10" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- EJECUCIÓN INMEDIATA ---
+  lug_cargarDatos();
+</script>

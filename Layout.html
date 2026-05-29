@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 70px;
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav id="mainNavbar" class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="javascript:void(0);" onclick="navegar('viajes')">Gestión 4.0</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
+                            Tablas Maestras
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('choferes')">Choferes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('lugares')">Lugares</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('empresas')">Empresas Transporte</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('vehiculos')">Vehículos</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('clientes')">Clientes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('liquidaciones')">LiquidarCliente</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('viajes')">Viajes</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
+                            Reportes
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_chof_abrirModal()">
+                                    📄 Liq. Choferes Propio
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_ibcm_abrirModal()">
+                                    📄 Reporte IBCM
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <span id="userDisplay" class="navbar-text text-info fw-bold small">
+                    
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div id="loader" class="loading-overlay">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+
+        <div id="app-content">
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function showLoading(show) {
+            document.getElementById('loader').style.display = show ? 'flex' : 'none';
+        }
+
+        // FUNCIÓN ÚNICA DE NAVEGACIÓN Y CANDADO DE SEGURIDAD
+        function navegar(pagina) {
+            const usuarioActivo = sessionStorage.getItem('sys_usuario');
+
+            // 1. Interceptor: Si no hay usuario y no va al login, lo forzamos al login
+            if (!usuarioActivo && pagina !== 'login') {
+                pagina = 'login'; 
+            }
+
+            // 2. Interfaz: Mostrar u ocultar la barra de navegación superior
+            const navBarElement = document.getElementById('mainNavbar');
+            if (navBarElement) {
+                navBarElement.style.display = (pagina === 'login') ? 'none' : 'flex';
+            }
+
+            // 3. Interfaz: Mostrar el nombre del usuario si está logueado
+            if (usuarioActivo) {
+                document.getElementById('userDisplay').innerText = "👤 " + usuarioActivo;
+            }
+
+            // 4. Interfaz: Ocultar menú móvil al hacer clic
+            const navCollapse = document.getElementById('navbarNav');
+            if (navCollapse && navCollapse.classList.contains('show')) {
+                bootstrap.Collapse.getInstance(navCollapse).hide();
+            }
+
+            showLoading(true);
+            
+            // 5. Carga de la página solicitada
+            google.script.run
+                .withSuccessHandler(html => {
+                    inyectarYEjecutar(html);
+                    showLoading(false);
+                })
+                .withFailureHandler(e => {
+                    console.error("ERROR CRÍTICO EN EL SERVIDOR:", e);
+                    document.getElementById('app-content').innerHTML = `<div class="alert alert-danger">Error de red: ${e.message}</div>`;
+                    showLoading(false);
+                })
+                .apiGetPageHtml(pagina);
+        }
+
+        // MOTOR DE INYECCIÓN SPA
+        function inyectarYEjecutar(htmlContent) {
+            const container = document.getElementById('app-content');
+            
+            container.innerHTML = ""; 
+
+            if (!htmlContent || htmlContent.startsWith("ERROR_CRITICO:")) {
+                container.innerHTML = `
+                    <div class="alert alert-danger mt-5 shadow">
+                        <h4>⚠️ Error del Servidor</h4>
+                        <p>${htmlContent || 'El servidor devolvió un contenido vacío.'}</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = htmlContent;
+
+            const scripts = container.querySelectorAll("script");
+            scripts.forEach((oldScript) => {
+                try {
+                    const newScript = document.createElement("script");
+                    Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                    newScript.text = oldScript.text;
+                    oldScript.parentNode.replaceChild(newScript, oldScript);
+                } catch (err) {
+                    console.error("Error crítico ejecutando el script de la página:", err);
+                    container.insertAdjacentHTML('afterbegin', `<div class="alert alert-warning">Error en el código de la vista: ${err.message}</div>`);
+                }
+            });
+        }
+
+        // --- ARRANQUE INICIAL ---
+        // Esto dispara la app al cargar la URL. Intentará abrir 'viajes', 
+        // pero la función navegar() interceptará y mostrará 'login' si no hay sesión.
+        document.addEventListener('DOMContentLoaded', () => {
+            navegar('viajes');
+        });
+
+    </script>
+
+    <?!= include('reporte_choferes'); ?>
+    <?!= include('reporte_ibcm'); ?>
+</body>
+
+</html>

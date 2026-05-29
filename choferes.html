@@ -1,0 +1,459 @@
+<style>
+  .modal-xxl { max-width: 95% !important; }
+</style>
+
+<h2 class="mb-3">Gestión de Choferes</h2>
+
+<div id="chof_alertBox" class="alert alert-danger d-none shadow-sm"></div>
+
+<button id="chof_btnAlta" class="btn btn-success mb-3 d-none" onclick="chof_abrirModal()">
+  + Nuevo Chofer
+</button>
+
+<div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th>Acciones</th>
+        <th>Legajo</th>
+        <th>Nombre</th>
+        <th>Celular</th>
+        <th>DNI</th>
+        <th>CUIT</th>
+        <th>Mail</th>
+        <th>Estado Civil</th>
+        <th>Domicilio</th>
+        <th>Provincia</th>
+        <th>Pais</th>
+        <th>Nacimiento</th>
+        <th>Ingreso</th>
+        <th>Categoría</th>
+        <th>Empresa</th>
+        <th>Patente Tractor</th>
+        <th>Patente Remolque</th>
+        <th>Contacto Fam.</th>
+        <th>Tel. Contacto</th>
+        <th>Relación</th>
+        <th>Baja</th>
+        <th>ID Geotab</th>
+      </tr>
+    </thead>
+    <tbody id="chof_tableBody">
+      <tr><td colspan="22" class="text-center text-primary fw-bold p-4">Cargando sistema...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="chof_modalChofer" tabindex="-1">
+  <div class="modal-dialog modal-xxl"> 
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ficha del Chofer</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="chof_formChofer">
+          <input type="hidden" name="actionType" id="chof_actionType">
+          
+          <div class="row g-3">
+            
+            <div class="col-md-3"> 
+               <h6 class="text-primary border-bottom pb-2">Identificación</h6>
+               <label class="form-label small">Legajo</label>
+               <input type="text" name="Legajo" class="form-control form-control-sm" required>
+
+               <label class="form-label small mt-2">Nombre Completo</label>
+               <input type="text" name="Nombre" class="form-control form-control-sm" required>
+
+               <label class="form-label small mt-2">DNI</label>
+               <input type="text" name="DNI" class="form-control form-control-sm">
+                 
+               <label class="form-label small mt-2">CUIT</label>
+               <input type="text" name="CUIT" class="form-control form-control-sm">
+
+               <label class="form-label small mt-2">Nacimiento</label>
+               <input type="date" name="Fecha_Nacimiento" class="form-control form-control-sm">
+               
+               <label class="form-label small mt-2">Estado Civil</label>
+               <select name="Estado_Civil" class="form-select form-select-sm">
+                 <option value="">- Seleccionar -</option>
+                 <option value="Soltero">Soltero</option>
+                 <option value="Casado">Casado</option>
+                 <option value="Divorciado">Divorciado</option>
+                 <option value="Viudo">Viudo</option>
+               </select>
+            </div>
+
+            <div class="col-md-3">
+               <h6 class="text-primary border-bottom pb-2">Ubicación</h6>
+               
+               <label class="form-label small">Domicilio</label>
+               <div class="input-group input-group-sm">
+                 <input type="text" name="Domicilio" id="chof_inputDomicilio" class="form-control" placeholder="Calle Altura, Ciudad">
+                 <button class="btn btn-outline-primary" type="button" onclick="chof_autocompletarGeo()" title="Detectar Provincia y País">
+                   📍 Auto
+                 </button>
+               </div>
+               <div id="chof_geoFeedback" class="form-text text-primary small d-none">Consultando ubicación...</div>
+
+               <label class="form-label small mt-2">Provincia</label>
+               <select name="Provincia" id="chof_selProvincia" class="form-select form-select-sm">
+                 <option value="">Cargando...</option>
+               </select>
+
+               <label class="form-label small mt-2">País</label>
+               <select name="Pais" id="chof_selPais" class="form-select form-select-sm">
+                 <option value="">Cargando...</option>
+               </select>
+
+               <label class="form-label small mt-2">Celular</label>
+               <input type="text" name="Celular" class="form-control form-control-sm">
+
+               <label class="form-label small mt-2">Mail</label>
+               <input type="email" name="Mail" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-3">
+               <h6 class="text-primary border-bottom pb-2">Datos Laborales</h6>
+
+               <label class="form-label small">Empresa Transporte</label>
+               <select name="NOMBRE_EMPRESA" id="chof_selEmpresa" class="form-select form-select-sm">
+                  <option value="">Cargando...</option>
+               </select>
+
+               <label class="form-label small mt-2">Categoría</label>
+               <select name="CATEGORIA" class="form-select form-select-sm">
+                  <option value="">- Seleccionar -</option>
+                  <option value="Larga Distancia">Larga Distancia</option>
+                  <option value="Local">Local/Reparto</option>
+                  <option value="Internacional">Internacional</option>
+               </select>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                   <label class="form-label small">Ingreso</label>
+                   <input type="date" name="Fecha_Ingreso" class="form-control form-control-sm">
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Baja</label>
+                   <input type="date" name="Fecha_baja" class="form-control form-control-sm">
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">Patente Tractor</label>
+               <select name="PATENTE_TRACTOR" id="chof_selTractor" class="form-select form-select-sm">
+                  <option value="">- Asignar -</option>
+               </select>
+
+               <label class="form-label small mt-2">Patente Remolque</label>
+               <select name="PATENTE_REMOLQUE" id="chof_selRemolque" class="form-select form-select-sm">
+                  <option value="">- Asignar -</option>
+               </select>
+            </div>
+
+            <div class="col-md-3">
+               <h6 class="text-primary border-bottom pb-2">Otros / Geotab</h6>
+
+               <label class="form-label small">ID Geotab</label>
+               <input type="text" name="ID_Geotab" class="form-control form-control-sm">
+
+               <h6 class="text-primary border-bottom pb-2 mt-4">Contacto Emergencia</h6>
+               <label class="form-label small">Nombre Familiar</label>
+               <input type="text" name="ContactoFamiliar" class="form-control form-control-sm">
+               
+               <label class="form-label small mt-2">Teléfono Familiar</label>
+               <input type="text" name="TelefonoContacto" class="form-control form-control-sm">
+               
+               <label class="form-label small mt-2">Relación</label>
+               <input type="text" name="RelacionContacto" class="form-control form-control-sm">
+            </div>
+
+          </div> 
+        </form>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="chof_guardar()">Guardar Ficha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var chof_userRole = null;
+  var chof_listasGlobales = {}; 
+
+  function chof_cargarDatos() {
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('chof_alertBox').classList.add('d-none');
+
+    google.script.run
+      .withSuccessHandler(chof_renderTable)
+      .withFailureHandler(chof_handleError)
+      .apiGetChoferes(usu); // Pasamos identidad
+  }
+
+  function chof_renderTable(response) {
+    showLoading(false);
+    
+    if (!response || response.success === false) {
+       document.getElementById('chof_alertBox').innerHTML = '<strong>Error:</strong> ' + (response ? response.error : 'Desconocido');
+       document.getElementById('chof_alertBox').classList.remove('d-none');
+       document.getElementById('chof_tableBody').innerHTML = '<tr><td colspan="22" class="text-center text-danger p-4">Error al cargar datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    chof_userRole = response.role;
+    chof_listasGlobales = response.lists; 
+
+    try {
+        chof_llenarSelects();
+    } catch(e) {
+        console.warn("Faltan listas auxiliares.", e);
+    }
+
+    const tbody = document.getElementById('chof_tableBody');
+    tbody.innerHTML = '';
+
+    if (chof_userRole === 'Admin' || chof_userRole === 'Update') {
+      document.getElementById('chof_btnAlta').classList.remove('d-none');
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="22" class="text-center p-4">No hay registros.</td></tr>';
+      return;
+    }
+
+    let htmlContent = '';
+    data.forEach(row => {
+      // Codificación segura
+      const rowEncoded = encodeURIComponent(JSON.stringify(row));
+      
+      let botones = '<div class="btn-group">';
+      if (chof_userRole === 'Admin' || chof_userRole === 'Update') {
+          botones += `<button class="btn btn-xs btn-warning" onclick="chof_editar(decodeURIComponent('${rowEncoded}'))">✏️</button>`;
+      }
+      if (chof_userRole === 'Admin') {
+          botones += `<button class="btn btn-xs btn-danger" onclick="chof_eliminar('${row.Legajo}')">🗑️</button>`;
+      }
+      botones += '</div>';
+
+      const tr = `<tr>
+        <td class="text-center">${botones}</td>
+        <td><strong>${row.Legajo}</strong></td>
+        <td>${row.Nombre || ''}</td>
+        <td>${row.Celular || ''}</td>
+        <td>${row.DNI || ''}</td>
+        <td>${row.CUIT || ''}</td>
+        <td>${row.Mail || ''}</td>
+        <td>${row.Estado_Civil || ''}</td>
+        <td>${row.Domicilio || ''}</td>
+        <td>${row.Provincia || ''}</td>
+        <td>${row.Pais || ''}</td>
+        <td>${row.Fecha_Nacimiento || ''}</td>
+        <td>${row.Fecha_Ingreso || ''}</td>
+        <td>${row.CATEGORIA || ''}</td>
+        <td>${row.NOMBRE_EMPRESA || ''}</td>
+        <td>${row.PATENTE_TRACTOR || ''}</td>
+        <td>${row.PATENTE_REMOLQUE || ''}</td>
+        <td>${row.ContactoFamiliar || ''}</td>
+        <td>${row.TelefonoContacto || ''}</td>
+        <td>${row.RelacionContacto || ''}</td>
+        <td>${row.Fecha_baja || ''}</td>
+        <td>${row.ID_Geotab || ''}</td>
+      </tr>`;
+      htmlContent += tr;
+    });
+    tbody.innerHTML = htmlContent;
+  }
+
+  function chof_llenarSelects() {
+    chof_llenarUnSelect('chof_selEmpresa', chof_listasGlobales.empresas, 'RAZON_SOCIAL', 'RAZON_SOCIAL');
+    chof_llenarUnSelect('chof_selProvincia', chof_listasGlobales.provincias, 'Provincia', 'Provincia');
+
+    let keyPais = 'País'; 
+    if (chof_listasGlobales.paises && chof_listasGlobales.paises.length > 0) {
+        const keys = Object.keys(chof_listasGlobales.paises[0]);
+        const encontrada = keys.find(k => k.trim().toLowerCase() === 'pais' || k.trim().toLowerCase() === 'país');
+        if (encontrada) keyPais = encontrada;
+    }
+    chof_llenarUnSelect('chof_selPais', chof_listasGlobales.paises, keyPais, keyPais);
+
+    const tractores = chof_listasGlobales.vehiculos.filter(v => v.Tipo_Unidad && v.Tipo_Unidad.toUpperCase().includes('TRACTOR'));
+    const remolques = chof_listasGlobales.vehiculos.filter(v => v.Tipo_Unidad && !v.Tipo_Unidad.toUpperCase().includes('TRACTOR'));
+
+    chof_llenarUnSelect('chof_selTractor', tractores, 'Patente', 'Patente');
+    chof_llenarUnSelect('chof_selRemolque', remolques, 'Patente', 'Patente');
+  }
+
+  // --- NUEVA LÓGICA DE AUTOCOMPLETADO ---
+  function chof_autocompletarGeo() {
+    const direccion = document.getElementById('chof_inputDomicilio').value;
+    if (direccion.length < 5) {
+      alert("Ingresa una dirección válida (ej: Calle 123, Ciudad).");
+      return;
+    }
+
+    const feedback = document.getElementById('chof_geoFeedback');
+    feedback.classList.remove('d-none');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        feedback.classList.add('d-none');
+        if (!res.success) {
+           console.warn("Error Geo:", res.error);
+           return;
+        }
+
+        // 1. Intentar setear País
+        if (res.pais) chof_intentarSeleccionar('chof_selPais', res.pais);
+
+        // 2. Intentar setear Provincia
+        if (res.provincia) chof_intentarSeleccionar('chof_selProvincia', res.provincia);
+      })
+      .withFailureHandler(e => {
+         feedback.classList.add('d-none');
+         alert("Error de conexión");
+      })
+      .apiConsultarGeoChofer(direccion); // Modificado para llamar a la nueva función backend
+  }
+
+  function chof_intentarSeleccionar(idSelect, valorBuscado) {
+    const select = document.getElementById(idSelect);
+    const busqueda = String(valorBuscado).trim().toLowerCase();
+    
+    for (let i = 0; i < select.options.length; i++) {
+       const optTexto = select.options[i].text.toLowerCase();
+       const optVal = select.options[i].value.toLowerCase();
+       
+       // Búsqueda flexible (contiene o es igual)
+       if (optVal === busqueda || optTexto.includes(busqueda) || busqueda.includes(optTexto)) {
+          select.selectedIndex = i;
+          return true;
+       }
+    }
+    return false;
+  }
+  // -------------------------------------
+
+  function chof_llenarUnSelect(idSelect, datos, campoValor, campoTexto) {
+    const sel = document.getElementById(idSelect);
+    sel.innerHTML = '<option value="">- Seleccionar -</option>';
+    const unicos = new Set();
+    if(datos) {
+        datos.forEach(item => {
+          const val = item[campoValor];
+          if(val && !unicos.has(val)) {
+             unicos.add(val);
+             const opt = document.createElement('option');
+             opt.value = val;
+             opt.text = item[campoTexto] || val;
+             sel.appendChild(opt);
+          }
+        });
+    }
+  }
+
+  // Conversión de fechas para Inputs Type="Date"
+  function chof_deTextoAFechaInput(fechaTexto) {
+    if (!fechaTexto || fechaTexto.indexOf('/') === -1) return '';
+    const partes = fechaTexto.split('/'); 
+    if (partes.length !== 3) return '';
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+
+  function chof_deInputAFechaTexto(fechaInput) {
+    if (!fechaInput || fechaInput.indexOf('-') === -1) return '';
+    const partes = fechaInput.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  function chof_abrirModal() {
+    const form = document.getElementById('chof_formChofer');
+    form.reset();
+    document.getElementById('chof_actionType').value = 'create';
+    form.elements['Legajo'].readOnly = false;
+    new bootstrap.Modal(document.getElementById('chof_modalChofer')).show();
+  }
+
+  function chof_editar(rowString) {
+    const row = JSON.parse(rowString);
+    const form = document.getElementById('chof_formChofer');
+    document.getElementById('chof_actionType').value = 'update';
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (form.elements[key]) {
+        if (form.elements[key].type === 'date') {
+           form.elements[key].value = chof_deTextoAFechaInput(value);
+        } else {
+           form.elements[key].value = value;
+        }
+      }
+    }
+
+    form.elements['Legajo'].readOnly = true;
+    new bootstrap.Modal(document.getElementById('chof_modalChofer')).show();
+  }
+
+  function chof_guardar() {
+    const form = document.getElementById('chof_formChofer');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => {
+        const input = form.elements[key];
+        if (input && input.type === 'date' && value) {
+            formData[key] = chof_deInputAFechaTexto(value);
+        } else {
+            formData[key] = value;
+        }
+    });
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if (res.success) {
+              bootstrap.Modal.getInstance(document.getElementById('chof_modalChofer')).hide();
+              chof_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("Error al guardar: " + res.error);
+          }
+      })
+      .withFailureHandler(chof_handleError)
+      .apiSaveChofer(usu, formData); // Pasamos identidad
+  }
+
+  function chof_eliminar(id) {
+    if(!confirm('¿Confirma eliminación del legajo ' + id + '?')) return;
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    showLoading(true);
+    google.script.run
+        .withSuccessHandler((res) => {
+            if (res.success) {
+                chof_cargarDatos();
+            } else {
+                showLoading(false);
+                alert("No se pudo eliminar: " + res.error);
+            }
+        })
+        .withFailureHandler(chof_handleError)
+        .apiDeleteChofer(usu, id); // Pasamos identidad
+  }
+
+  function chof_handleError(e) {
+    showLoading(false);
+    document.getElementById('chof_alertBox').innerHTML = '<strong>Error de red:</strong> ' + e.message;
+    document.getElementById('chof_alertBox').classList.remove('d-none');
+    document.getElementById('chof_tableBody').innerHTML = '<tr><td colspan="22" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- EJECUCIÓN INMEDIATA PARA SPA ---
+  chof_cargarDatos(); 
+</script>

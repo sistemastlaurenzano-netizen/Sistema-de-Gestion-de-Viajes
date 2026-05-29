@@ -1,0 +1,403 @@
+<style>
+  .modal-xl { max-width: 90% !important; }
+</style>
+
+<h2 class="mb-3">Gestión de Empresas de Transporte</h2>
+
+<div id="emp_alertBox" class="alert alert-danger d-none shadow-sm"></div>
+
+<button id="emp_btnAlta" class="btn btn-success mb-3 d-none" onclick="emp_abrirModal()">
+  + Nueva Empresa
+</button>
+
+<div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th>Acciones</th>
+        <th>ID</th>
+        <th>Razón Social</th>
+        <th>Tipo Empresa</th>
+        <th>CUIT</th>
+        <th>Domicilio</th>
+        <th>Localidad</th>
+        <th>Provincia</th>
+        <th>País</th>
+        <th>Teléfono</th>
+        <th>Correo</th>
+      </tr>
+    </thead>
+    <tbody id="emp_tableBody">
+      <tr><td colspan="11" class="text-center text-primary fw-bold p-4">Cargando empresas...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="emp_modalEmpresa" tabindex="-1">
+  <div class="modal-dialog modal-xl"> 
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ficha de Empresa</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="emp_formEmpresa">
+          <input type="hidden" name="actionType" id="emp_actionType">
+          
+          <div class="row g-3">
+            
+            <div class="col-md-6"> 
+               <h6 class="text-primary border-bottom pb-2">Datos Fiscales</h6>
+               
+               <div class="row">
+                 <div class="col-3">
+                   <label class="form-label small">ID (Key)</label>
+                   <input type="text" name="EMPRESA_KEY" id="emp_inputEmpresaKey" class="form-control form-control-sm bg-light fw-bold" readonly>
+                 </div>
+                 <div class="col-9">
+                   <label class="form-label small">Razón Social</label>
+                   <input type="text" name="RAZON_SOCIAL" class="form-control form-control-sm" required>
+                 </div>
+               </div>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                    <label class="form-label small">CUIT</label>
+                    <input type="text" name="CUIT" class="form-control form-control-sm">
+                 </div>
+                 <div class="col-6">
+                    <label class="form-label small">Tipo de Empresa</label>
+                    <select name="TIPO_EMPRESA" id="emp_selTipoEmpresa" class="form-select form-select-sm" required>
+                      <option value="">- Seleccionar -</option>
+                      <option value="PROPIA">PROPIA</option>
+                      <option value="FLETERO">FLETERO</option>
+                      <option value="TRACTORISTA">TRACTORISTA</option>
+                    </select>
+                 </div>
+               </div>
+
+               <h6 class="text-primary border-bottom pb-2 mt-4">Contacto</h6>
+               
+               <div class="row">
+                 <div class="col-6">
+                   <label class="form-label small">Teléfono</label>
+                   <input type="text" name="TELEFONO" class="form-control form-control-sm">
+                 </div>
+                 <div class="col-6">
+                    <label class="form-label small">Correo Electrónico</label>
+                    <input type="email" name="CORREO" class="form-control form-control-sm">
+                 </div>
+               </div>
+            </div>
+
+            <div class="col-md-6">
+               <h6 class="text-primary border-bottom pb-2">Ubicación</h6>
+               
+               <label class="form-label small">Domicilio</label>
+               <div class="input-group input-group-sm">
+                 <input type="text" name="DOMICILIO" id="emp_inputDomicilio" class="form-control" placeholder="Calle Altura, Ciudad">
+                 <button class="btn btn-outline-primary" type="button" onclick="emp_autocompletarGeo()" title="Detectar Provincia y País">
+                   📍 Auto
+                 </button>
+               </div>
+               <div id="emp_geoFeedback" class="form-text text-primary small d-none">Consultando...</div>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                   <label class="form-label small">Provincia</label>
+                   <select name="PROVINCIA" id="emp_selProvincia" class="form-select form-select-sm" onchange="emp_filtrarLocalidades()">
+                     <option value="">- Seleccionar -</option>
+                   </select>
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Localidad</label>
+                   <select name="LOCALIDAD" id="emp_selLocalidad" class="form-select form-select-sm">
+                     <option value="">(Seleccione Provincia)</option>
+                   </select>
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">País</label>
+               <select name="PAIS" id="emp_selPais" class="form-select form-select-sm">
+                  <option value="">Cargando...</option>
+               </select>
+            </div>
+
+          </div> 
+        </form>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="emp_guardar()">Guardar Empresa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var emp_userRole = null;
+  var emp_listasGlobales = {}; 
+  var emp_nextIdGlobal = 0; 
+
+  function emp_cargarDatos() {
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('emp_alertBox').classList.add('d-none'); 
+
+    google.script.run
+      .withSuccessHandler(emp_renderTable)
+      .withFailureHandler(emp_handleError)
+      .apiGetEmpresas(usu); 
+  }
+
+  function emp_renderTable(response) {
+    showLoading(false);
+    const tbody = document.getElementById('emp_tableBody');
+    
+    if (!response || response.success === false) {
+       document.getElementById('emp_alertBox').innerHTML = '<strong>Atención:</strong> ' + (response ? response.error : 'Error desconocido.');
+       document.getElementById('emp_alertBox').classList.remove('d-none');
+       tbody.innerHTML = '<tr><td colspan="11" class="text-center text-danger p-4">No se pudieron cargar los datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    emp_userRole = response.role;
+    emp_listasGlobales = response.lists; 
+    emp_nextIdGlobal = response.nextId; 
+
+    try {
+        emp_inicializarSelects();
+    } catch (e) {
+        console.warn("Faltan listas auxiliares.", e);
+    }
+
+    tbody.innerHTML = '';
+
+    if (emp_userRole === 'Admin' || emp_userRole === 'Update') {
+      document.getElementById('emp_btnAlta').classList.remove('d-none');
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="11" class="text-center p-4">No hay empresas registradas.</td></tr>';
+      return;
+    }
+
+    let htmlContent = '';
+    data.forEach(row => {
+      const rowEncoded = encodeURIComponent(JSON.stringify(row));
+      
+      let botones = '<div class="btn-group">';
+      if (emp_userRole === 'Admin' || emp_userRole === 'Update') {
+          botones += `<button class="btn btn-xs btn-warning" onclick="emp_editar(decodeURIComponent('${rowEncoded}'))">✏️</button>`;
+      }
+      if (emp_userRole === 'Admin') {
+          botones += `<button class="btn btn-xs btn-danger" onclick="emp_eliminar('${row.EMPRESA_KEY}')">🗑️</button>`;
+      }
+      botones += '</div>';
+
+      const tr = `<tr>
+        <td class="text-center">${botones}</td>
+        <td><strong>${row.EMPRESA_KEY}</strong></td>
+        <td>${row.RAZON_SOCIAL || ''}</td>
+        <td>${row.TIPO_EMPRESA || ''}</td>
+        <td>${row.CUIT || ''}</td>
+        <td>${row.DOMICILIO || ''}</td>
+        <td>${row.LOCALIDAD || ''}</td>
+        <td>${row.PROVINCIA || ''}</td>
+        <td>${row.PAIS || ''}</td>
+        <td>${row.TELEFONO || ''}</td>
+        <td>${row.CORREO || ''}</td>
+      </tr>`;
+      htmlContent += tr;
+    });
+    tbody.innerHTML = htmlContent;
+  }
+
+  function emp_inicializarSelects() {
+    emp_llenarUnSelect('emp_selProvincia', emp_listasGlobales.provincias, 'Provincia', 'Provincia');
+    
+    let keyPais = 'País'; 
+    if (emp_listasGlobales.paises && emp_listasGlobales.paises.length > 0) {
+        const keys = Object.keys(emp_listasGlobales.paises[0]);
+        const encontrada = keys.find(k => k.trim().toLowerCase() === 'pais' || k.trim().toLowerCase() === 'país');
+        if (encontrada) keyPais = encontrada;
+    }
+    emp_llenarUnSelect('emp_selPais', emp_listasGlobales.paises, keyPais, keyPais);
+  }
+
+  function emp_filtrarLocalidades(localidadPreseleccionada = null) {
+    const provSeleccionada = document.getElementById('emp_selProvincia').value;
+    const selLoc = document.getElementById('emp_selLocalidad');
+    selLoc.innerHTML = '<option value="">- Seleccionar -</option>';
+
+    if (!provSeleccionada) return;
+
+    const localidadesFiltradas = emp_listasGlobales.provincias.filter(row => row.Provincia === provSeleccionada);
+    const locsUnicas = new Set(localidadesFiltradas.map(r => r.Localidad));
+    const locsOrdenadas = Array.from(locsUnicas).sort();
+
+    locsOrdenadas.forEach(locName => {
+      const opt = document.createElement('option');
+      opt.value = locName;
+      opt.text = locName;
+      selLoc.appendChild(opt);
+    });
+
+    if (localidadPreseleccionada) {
+      selLoc.value = localidadPreseleccionada;
+    }
+  }
+
+  function emp_autocompletarGeo() {
+    const direccion = document.getElementById('emp_inputDomicilio').value;
+    if (direccion.length < 5) {
+      alert("Ingrese una dirección válida.");
+      return;
+    }
+
+    const feedback = document.getElementById('emp_geoFeedback');
+    feedback.classList.remove('d-none');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        feedback.classList.add('d-none');
+        if (!res.success) return;
+
+        if (res.pais) emp_intentarSeleccionar('emp_selPais', res.pais);
+
+        if (res.provincia) {
+           const match = emp_intentarSeleccionar('emp_selProvincia', res.provincia);
+           if (match) {
+             emp_filtrarLocalidades(); 
+             if (res.localidad) {
+                setTimeout(() => emp_intentarSeleccionar('emp_selLocalidad', res.localidad), 100);
+             }
+           }
+        }
+      })
+      .withFailureHandler(e => {
+         feedback.classList.add('d-none');
+         alert("Error de conexión");
+      })
+      .apiConsultarGeoEmpresa(direccion);
+  }
+
+  function emp_intentarSeleccionar(idSelect, valorBuscado) {
+    const select = document.getElementById(idSelect);
+    const busqueda = String(valorBuscado).trim().toLowerCase();
+    
+    for (let i = 0; i < select.options.length; i++) {
+       const optTexto = select.options[i].text.toLowerCase();
+       const optVal = select.options[i].value.toLowerCase();
+       
+       if (optVal === busqueda || optTexto.includes(busqueda) || busqueda.includes(optTexto)) {
+          select.selectedIndex = i;
+          return true;
+       }
+    }
+    return false;
+  }
+
+  function emp_llenarUnSelect(idSelect, datos, campoValor, campoTexto) {
+    const sel = document.getElementById(idSelect);
+    sel.innerHTML = '<option value="">- Seleccionar -</option>';
+    const unicos = new Set();
+    if(datos) {
+        datos.forEach(item => {
+          const val = item[campoValor];
+          if(val && !unicos.has(val)) {
+             unicos.add(val);
+             const opt = document.createElement('option');
+             opt.value = val;
+             opt.text = item[campoTexto] || val;
+             sel.appendChild(opt);
+          }
+        });
+    }
+  }
+
+  function emp_abrirModal() {
+    const form = document.getElementById('emp_formEmpresa');
+    form.reset();
+    document.getElementById('emp_actionType').value = 'create';
+    document.getElementById('emp_selLocalidad').innerHTML = '<option value="">(Seleccione Provincia)</option>';
+    
+    document.getElementById('emp_inputEmpresaKey').value = emp_nextIdGlobal;
+    document.getElementById('emp_inputEmpresaKey').readOnly = true;
+
+    new bootstrap.Modal(document.getElementById('emp_modalEmpresa')).show();
+  }
+
+  function emp_editar(rowString) {
+    const row = JSON.parse(rowString);
+    const form = document.getElementById('emp_formEmpresa');
+    document.getElementById('emp_actionType').value = 'update';
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (form.elements[key]) form.elements[key].value = value;
+    }
+
+    const prov = row['PROVINCIA'];
+    const loc = row['LOCALIDAD'];
+    if (prov) {
+       document.getElementById('emp_selProvincia').value = prov;
+       emp_filtrarLocalidades(loc);
+    }
+
+    document.getElementById('emp_inputEmpresaKey').readOnly = true;
+    new bootstrap.Modal(document.getElementById('emp_modalEmpresa')).show();
+  }
+
+  function emp_guardar() {
+    const form = document.getElementById('emp_formEmpresa');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => formData[key] = value);
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if (res.success) {
+              bootstrap.Modal.getInstance(document.getElementById('emp_modalEmpresa')).hide();
+              emp_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("Error al guardar: " + res.error);
+          }
+      })
+      .withFailureHandler(emp_handleError)
+      .apiSaveEmpresa(usu, formData); 
+  }
+
+  function emp_eliminar(id) {
+    if(!confirm('¿Confirma eliminar empresa ID ' + id + '?')) return;
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if (res.success) {
+              emp_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("No se pudo eliminar: " + res.error);
+          }
+      })
+      .withFailureHandler(emp_handleError)
+      .apiDeleteEmpresa(usu, id); 
+  }
+
+  function emp_handleError(e) {
+    showLoading(false);
+    document.getElementById('emp_alertBox').innerHTML = '<strong>Error de red:</strong> ' + e.message;
+    document.getElementById('emp_alertBox').classList.remove('d-none');
+    document.getElementById('emp_tableBody').innerHTML = '<tr><td colspan="11" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  emp_cargarDatos(); 
+</script>

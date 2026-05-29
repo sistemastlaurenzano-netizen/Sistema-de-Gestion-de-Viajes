@@ -1,0 +1,371 @@
+<style>
+  .modal-xl { max-width: 95% !important; }
+</style>
+
+<h2 class="mb-3">Gestión de Flota (Vehículos)</h2>
+
+<div id="veh_alertBox" class="alert alert-danger d-none shadow-sm"></div>
+
+<button id="veh_btnAlta" class="btn btn-success mb-3 d-none" onclick="veh_abrirModal()">
+  + Nuevo Vehículo
+</button>
+
+<div class="table-responsive" style="max-height: 80vh; overflow-y: auto;">
+  <table class="table table-bordered table-striped table-hover small w-100" style="white-space: nowrap;">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th>Acciones</th>
+        <th>Interno</th>
+        <th>Patente</th>
+        <th>Marca</th>
+        <th>Modelo</th>
+        <th>Tipo</th>
+        <th>Año</th>
+        <th>Empresa</th>
+        <th>Ejes</th>
+        <th>Tara</th>
+        <th>Odom.</th>
+        <th>Alta</th>
+        <th>Baja</th>
+        <th>Geotab</th>
+      </tr>
+    </thead>
+    <tbody id="veh_tableBody">
+      <tr><td colspan="14" class="text-center text-primary fw-bold p-4">Cargando flota...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="modal fade" id="veh_modalVehiculo" tabindex="-1">
+  <div class="modal-dialog modal-xl"> 
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ficha Técnica del Vehículo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="veh_formVehiculo">
+          <input type="hidden" name="actionType" id="veh_actionType">
+          
+          <div class="row g-3">
+            
+            <div class="col-md-4"> 
+               <h6 class="text-primary border-bottom pb-2">Identificación</h6>
+               
+               <div class="row">
+                 <div class="col-4">
+                   <label class="form-label small">Interno</label>
+                   <input type="text" name="Interno" id="veh_inputInterno" class="form-control form-control-sm fw-bold" placeholder="Ej: A-100" required>
+                 </div>
+                 <div class="col-8">
+                   <label class="form-label small">Patente</label>
+                   <input type="text" name="Patente" class="form-control form-control-sm" required>
+                 </div>
+               </div>
+
+               <div class="row mt-2">
+                  <div class="col-6">
+                    <label class="form-label small">Marca</label>
+                    <input type="text" name="Marca" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Modelo</label>
+                    <input type="text" name="Modelo" class="form-control form-control-sm">
+                  </div>
+               </div>
+
+               <div class="row mt-2">
+                  <div class="col-6">
+                    <label class="form-label small">Año</label>
+                    <input type="number" name="Anio" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small">Tipo Unidad</label>
+                    <select name="Tipo_Unidad" class="form-select form-select-sm">
+                       <option value="">- Seleccionar -</option>
+                       <option value="Tractor">Tractor</option>
+                       <option value="Semi">Semi</option>
+                       <option value="Bitren">Bitren</option>
+                       <option value="Utilitario">Utilitario</option>
+                    </select>
+                  </div>
+               </div>
+            </div>
+
+            <div class="col-md-4">
+               <h6 class="text-primary border-bottom pb-2">Especificaciones</h6>
+
+               <div class="row">
+                 <div class="col-6">
+                    <label class="form-label small">Config. Ejes</label>
+                    <select name="EJES" class="form-select form-select-sm">
+                    <option value="">- Seleccionar -</option>
+                    <option value="1D">1D (Direccional)</option>
+                    <option value="1D-1D">1D-1D (Chasis simple)</option>
+                    <option value="1D-2D">1D-2D (Chasis balancín)</option>
+                    <option value="3D">3D (Tridem)</option>
+                    <option value="1D-1D-1D">1D-1D-1D (1+1+1)</option>
+                    <option value="2D">2D (Tándem)</option>
+                    <option value="2D-1D">2D-1D</option>
+                    <option value="3D-3D">3D-3D (Bitren)</option>
+                    </select>
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Tara (Kg)</label>
+                   <input type="number" name="TARA" class="form-control form-control-sm">
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">N° Motor</label>
+               <input type="text" name="Motor" class="form-control form-control-sm">
+
+               <label class="form-label small mt-2">N° Chasis</label>
+               <input type="text" name="Chasis" class="form-control form-control-sm">
+
+               <label class="form-label small mt-2">Odómetro</label>
+               <input type="number" name="Odometro" class="form-control form-control-sm">
+            </div>
+
+            <div class="col-md-4">
+               <h6 class="text-primary border-bottom pb-2">Administración</h6>
+
+               <label class="form-label small">Empresa Titular</label>
+               <select name="Empresa" id="veh_selEmpresa" class="form-select form-select-sm">
+                 <option value="">Cargando...</option>
+               </select>
+
+               <div class="row mt-2">
+                 <div class="col-6">
+                   <label class="form-label small">Fecha Alta</label>
+                   <input type="date" name="Fecha_Alta" class="form-control form-control-sm">
+                 </div>
+                 <div class="col-6">
+                   <label class="form-label small">Fecha Baja</label>
+                   <input type="date" name="Fecha_Baja" class="form-control form-control-sm">
+                 </div>
+               </div>
+
+               <label class="form-label small mt-2">ID Geotab</label>
+               <input type="text" name="Geotab_ID" class="form-control form-control-sm">
+            </div>
+
+          </div> 
+        </form>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="veh_guardar()">Guardar Vehículo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var veh_userRole = null;
+  var veh_listasGlobales = {}; 
+
+  function veh_cargarDatos() {
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+    document.getElementById('veh_alertBox').classList.add('d-none');
+
+    google.script.run
+      .withSuccessHandler(veh_renderTable)
+      .withFailureHandler(veh_handleError)
+      .apiGetVehiculos(usu); // Pasamos identidad
+  }
+
+  function veh_renderTable(response) {
+    showLoading(false);
+    
+    if (!response || response.success === false) {
+       document.getElementById('veh_alertBox').innerHTML = '<strong>Error:</strong> ' + (response ? response.error : 'Desconocido');
+       document.getElementById('veh_alertBox').classList.remove('d-none');
+       document.getElementById('veh_tableBody').innerHTML = '<tr><td colspan="14" class="text-center text-danger p-4">Error al cargar datos.</td></tr>';
+       return;
+    }
+
+    const data = response.data;
+    veh_userRole = response.role;
+    veh_listasGlobales = response.lists; 
+
+    try {
+        veh_llenarUnSelect('veh_selEmpresa', veh_listasGlobales.empresas, 'RAZON_SOCIAL', 'RAZON_SOCIAL');
+    } catch (e) {
+        console.warn("Falta lista de empresas.", e);
+    }
+
+    const tbody = document.getElementById('veh_tableBody');
+    tbody.innerHTML = '';
+
+    if (veh_userRole === 'Admin' || veh_userRole === 'Update') {
+      document.getElementById('veh_btnAlta').classList.remove('d-none');
+    }
+
+    if (!data || data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="14" class="text-center p-4">No hay vehículos registrados.</td></tr>';
+      return;
+    }
+
+    let htmlContent = '';
+    data.forEach(row => {
+      // Codificación segura
+      const rowEncoded = encodeURIComponent(JSON.stringify(row));
+      
+      let botones = '<div class="btn-group">';
+      if (veh_userRole === 'Admin' || veh_userRole === 'Update') {
+          botones += `<button class="btn btn-xs btn-warning" onclick="veh_editar(decodeURIComponent('${rowEncoded}'))">✏️</button>`;
+      }
+      if (veh_userRole === 'Admin') {
+          botones += `<button class="btn btn-xs btn-danger" onclick="veh_eliminar('${row.Interno}')">🗑️</button>`;
+      }
+      botones += '</div>';
+
+      const tr = `<tr>
+        <td class="text-center">${botones}</td>
+        <td><strong>${row.Interno}</strong></td>
+        <td><span class="badge bg-secondary">${row.Patente || ''}</span></td>
+        <td>${row.Marca || ''}</td>
+        <td>${row.Modelo || ''}</td>
+        <td>${row.Tipo_Unidad || ''}</td>
+        <td>${row.Anio || ''}</td>
+        <td>${row.Empresa || ''}</td>
+        <td>${row.EJES || ''}</td>
+        <td>${row.TARA || ''}</td>
+        <td>${row.Odometro || ''}</td>
+        <td>${row.Fecha_Alta || ''}</td>
+        <td>${row.Fecha_Baja || ''}</td>
+        <td>${row.Geotab_ID || ''}</td>
+      </tr>`;
+      htmlContent += tr;
+    });
+    tbody.innerHTML = htmlContent;
+  }
+
+  function veh_llenarUnSelect(idSelect, datos, campoValor, campoTexto) {
+    const sel = document.getElementById(idSelect);
+    sel.innerHTML = '<option value="">- Seleccionar -</option>';
+    const unicos = new Set();
+    if(datos) {
+        datos.forEach(item => {
+          const val = item[campoValor];
+          if(val && !unicos.has(val)) {
+             unicos.add(val);
+             const opt = document.createElement('option');
+             opt.value = val;
+             opt.text = item[campoTexto] || val;
+             sel.appendChild(opt);
+          }
+        });
+    }
+  }
+
+  function veh_deTextoAFechaInput(fechaTexto) {
+    if (!fechaTexto || fechaTexto.indexOf('/') === -1) return '';
+    const partes = fechaTexto.split('/'); 
+    if (partes.length !== 3) return '';
+    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+  }
+
+  function veh_deInputAFechaTexto(fechaInput) {
+    if (!fechaInput || fechaInput.indexOf('-') === -1) return '';
+    const partes = fechaInput.split('-');
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+
+  function veh_abrirModal() {
+    const form = document.getElementById('veh_formVehiculo');
+    form.reset();
+    document.getElementById('veh_actionType').value = 'create';
+    
+    // Habilitar ID para escritura manual
+    const inputId = document.getElementById('veh_inputInterno');
+    inputId.value = '';
+    inputId.readOnly = false; 
+    
+    new bootstrap.Modal(document.getElementById('veh_modalVehiculo')).show();
+    
+    // El foco funciona mejor si se da luego de que el modal termina de abrirse
+    setTimeout(() => inputId.focus(), 500);
+  }
+
+  function veh_editar(rowString) {
+    const row = JSON.parse(rowString);
+    const form = document.getElementById('veh_formVehiculo');
+    document.getElementById('veh_actionType').value = 'update';
+    
+    for (const [key, value] of Object.entries(row)) {
+      if (form.elements[key]) {
+        if (form.elements[key].type === 'date') {
+           form.elements[key].value = veh_deTextoAFechaInput(value);
+        } else {
+           form.elements[key].value = value;
+        }
+      }
+    }
+
+    // Bloquear ID al editar
+    document.getElementById('veh_inputInterno').readOnly = true; 
+    new bootstrap.Modal(document.getElementById('veh_modalVehiculo')).show();
+  }
+
+  function veh_guardar() {
+    const form = document.getElementById('veh_formVehiculo');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => {
+        const input = form.elements[key];
+        if (input && input.type === 'date' && value) {
+            formData[key] = veh_deInputAFechaTexto(value);
+        } else {
+            formData[key] = value;
+        }
+    });
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler((res) => {
+          if (res.success) {
+              bootstrap.Modal.getInstance(document.getElementById('veh_modalVehiculo')).hide();
+              veh_cargarDatos();
+          } else {
+              showLoading(false);
+              alert("Atención: " + res.error);
+          }
+      })
+      .withFailureHandler(veh_handleError)
+      .apiSaveVehiculo(usu, formData); // Pasamos identidad
+  }
+
+  function veh_eliminar(id) {
+    if(!confirm('¿Confirma eliminar Interno ' + id + '?')) return;
+    
+    const usu = sessionStorage.getItem('sys_usuario') || ''; 
+
+    showLoading(true);
+    google.script.run
+        .withSuccessHandler((res) => {
+            if (res.success) {
+                veh_cargarDatos();
+            } else {
+                showLoading(false);
+                alert("No se pudo eliminar: " + res.error);
+            }
+        })
+        .withFailureHandler(veh_handleError)
+        .apiDeleteVehiculo(usu, id); // Pasamos identidad
+  }
+
+  function veh_handleError(e) {
+    showLoading(false);
+    document.getElementById('veh_alertBox').innerHTML = '<strong>Error de red:</strong> ' + e.message;
+    document.getElementById('veh_alertBox').classList.remove('d-none');
+    document.getElementById('veh_tableBody').innerHTML = '<tr><td colspan="14" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- EJECUCIÓN INMEDIATA PARA SPA ---
+  veh_cargarDatos(); 
+</script>
