@@ -7,7 +7,7 @@ function doGet(e) {
     template.pageContent = page; 
     
     return template.evaluate()
-        .setTitle('Sistema de Viajes')
+        .setTitle('Viajes LZN')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1');
         
@@ -33,7 +33,7 @@ function apiGetPageHtml(pageName) {
 // --- 3. MENÚ EN GOOGLE SHEETS (onOpen) ---
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('🚀 Gestión Viajes')
+  ui.createMenu('🚀 GESTION DE VIAJES')
     .addItem('Abrir Sistema', 'abrirAppEnModal')
     .addToUi();
 }
@@ -80,7 +80,7 @@ function abrirAppEnModal() {
       .setWidth(1600)  // Ancho casi completo
       .setHeight(850); // Alto
       
-  SpreadsheetApp.getUi().showModalDialog(html, 'Sistema de Viajes Version 5.0');
+  SpreadsheetApp.getUi().showModalDialog(html, 'VIAJES LZN');
 }
 
 // --- NUEVA FUNCIÓN: CONSULTAR API EXTERNA ---
