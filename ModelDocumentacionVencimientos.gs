@@ -73,10 +73,15 @@ function apiGetVencimientosEntidad(usuarioApp, tipoEntidad, idEntidad) {
     const tiposDb = new ModelDocumentacionTipos(usuarioApp);
 
     // 1. Obtener los tipos de documentos que aplican a esta entidad
-    const tiposAplicables = tiposDb.getData({ AplicaA: tipoEntidad });
+    // Se filtra en memoria para asegurar que funcione incluso si BaseModel.getData(filtro) falla.
+    const todosLosTipos = tiposDb.getData();
+    const tiposAplicables = todosLosTipos.filter(t => String(t.AplicaA || '').trim() === tipoEntidad);
 
     // 2. Obtener los vencimientos ya cargados para esta entidad
-    const vencimientosCargados = idEntidad ? vencimientosDb.getData({ ID_Chofer: idEntidad }) : [];
+    // Se filtra en memoria para evitar errores de cache o de BaseModel.getData(filtro).
+    // Se compara como string para evitar problemas de tipo de dato (número vs texto).
+    const todosLosVencimientos = vencimientosDb.getData();
+    const vencimientosCargados = idEntidad ? todosLosVencimientos.filter(v => String(v.ID_Chofer || '').trim() === String(idEntidad).trim()) : [];
 
     // 3. Unir la información
     const resultado = tiposAplicables.map(tipo => {
