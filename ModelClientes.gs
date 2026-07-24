@@ -164,10 +164,16 @@ function apiBuscarDatosCuenta(nroCuenta) {
 function apiConsultarGeoCliente(direccion) {
   try {
     if (!direccion) return { error: "Dirección vacía" };
-    const loc = GEO_INFO_LOCA(direccion);
-    const prov = GEO_INFO_PROV(direccion);
-    const pais = GEO_INFO_PAIS(direccion);
-    return { success: true, localidad: loc, provincia: prov, pais: pais };
+    const locRaw = GEO_INFO_LOCA(direccion);
+    const provRaw = GEO_INFO_PROV(direccion);
+    const paisRaw = GEO_INFO_PAIS(direccion);
+
+    // Las funciones GEO_INFO devuelven un array 2D, ej: [['Buenos Aires']]. Hay que extraer el valor.
+    const localidad = (locRaw && locRaw[0] && locRaw[0][0]) ? locRaw[0][0] : "";
+    const provincia = (provRaw && provRaw[0] && provRaw[0][0]) ? provRaw[0][0] : "";
+    const pais = (paisRaw && paisRaw[0] && paisRaw[0][0]) ? paisRaw[0][0] : "";
+
+    return { success: true, localidad: localidad, provincia: provincia, pais: pais };
   } catch (e) {
     return { success: false, error: e.message };
   }
