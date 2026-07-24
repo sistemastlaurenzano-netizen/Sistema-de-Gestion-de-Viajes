@@ -56,6 +56,49 @@ class ModelDocumentacionVencimientos extends BaseModel {
   }
 }
 
+/**
+ * @function apiGetVencimientosEntidad
+ * @description Obtiene todos los tipos de documentos aplicables a una entidad (Chofer/Unidad) y sus fechas de vencimiento.
+ * @param {string} usuarioApp El email del usuario.
+ * @param {string} tipoEntidad 'Chofer' o 'Unidad'.
+ * @param {string} idEntidad El Legajo del chofer o el Interno de la unidad.
+ * @returns {{success: boolean, data: Array, role: string, error: string}}
+ */
+function apiGetVencimientosEntidad(usuarioApp, tipoEntidad, idEntidad) {
+  try {
+    const p = new PermisosModel(usuarioApp);
+    const role = p.checkAccess('DOCUMENTACION_VENCIMIENTOS', 'Read');
+
+    const vencimientosDb = new ModelDocumentacionVencimientos(usuarioApp);
+    const tiposDb = new ModelDocumentacionTipos(usuarioApp);
+
+    // 1. Obtener los tipos de documentos que aplican a esta entidad
+    const tiposAplicables = tiposDb.getData({ AplicaA: tipoEntidad });
+
+    // 2. Obtener los vencimientos ya cargados para esta entidad
+    const vencimientosCargados = idEntidad ? vencimientosDb.getData({ ID_Chofer: idEntidad }) : [];
+
+    // 3. Unir la información
+    const resultado = tiposAplicables.map(tipo => {
+      const vencimientoExistente = vencimientosCargados.find(v => v.ID_Documentacion_Tipo === tipo.ID);
+      return {
+        ID_Documentacion_Tipo: tipo.ID,
+        Nombre: tipo.Nombre,
+        EsObligatorio: tipo.EsObligatorio,
+        DiasTolerancia: tipo.DiasTolerancia || 0,
+        DiasPreaviso: tipo.DiasPreaviso || 30,
+        ID_Vencimiento: vencimientoExistente ? vencimientoExistente.ID : null,
+        FechaVencimiento: vencimientoExistente ? vencimientoExistente.FechaVencimiento : null
+      };
+    });
+
+    return { success: true, data: resultado, role: role };
+  } catch (e) {
+    Logger.log(`ERROR en apiGetVencimientosEntidad: ${e.message} ${e.stack}`);
+    return { success: false, error: `Error al obtener vencimientos: ${e.message}` };
+  }
+}
+
 // --- API PÚBLICA PARA ABM ---
 
 function apiGetVencimientos(usuarioApp, filtro) {

@@ -522,11 +522,17 @@
 
     google.script.run
       .withSuccessHandler(res => {
-        if (res.success) {
-          chof_vencimientosRole = res.role;
-          chof_renderVencimientos(res.data, legajo);
-        } else {
-          container.innerHTML = `<div class="alert alert-warning">${res.error}</div>`;
+        try {
+          if (res && res.success) {
+            chof_vencimientosRole = res.role;
+            const dataToRender = Array.isArray(res.data) ? res.data : [];
+            chof_renderVencimientos(dataToRender, legajo);
+          } else {
+            const errorMsg = res ? res.error : 'Respuesta inválida del servidor.';
+            container.innerHTML = `<div class="alert alert-warning">${errorMsg}</div>`;
+          }
+        } catch (e) {
+            container.innerHTML = `<div class="alert alert-danger">Error al procesar la respuesta: ${e.message}</div>`;
         }
       })
       .withFailureHandler(err => {
