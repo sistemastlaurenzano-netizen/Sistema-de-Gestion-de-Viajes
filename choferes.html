@@ -412,10 +412,32 @@
 
   // Conversión de fechas para Inputs Type="Date"
   function chof_deTextoAFechaInput(fechaTexto) {
-    if (!fechaTexto || fechaTexto.indexOf('/') === -1) return '';
-    const partes = fechaTexto.split('/'); 
-    if (partes.length !== 3) return '';
-    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    if (!fechaTexto) return '';
+    // Intenta crear un objeto Date desde cualquier formato (ISO, DD/MM/YYYY, etc.)
+    let dateObj;
+    const strFecha = String(fechaTexto);
+    if (strFecha.includes('/')) {
+        const parts = strFecha.split(' ')[0].split('/');
+        if (parts.length === 3) {
+            // new Date(año, mes - 1, día)
+            dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+        }
+    } else {
+        // Esto maneja formatos ISO (YYYY-MM-DDTHH:...) y YYYY-MM-DD
+        dateObj = new Date(strFecha);
+    }
+
+    // Si la fecha es inválida, retorna vacío
+    if (!dateObj || isNaN(dateObj.getTime())) {
+        return '';
+    }
+
+    // Formatea a YYYY-MM-DD para el input
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
   }
 
   function chof_deInputAFechaTexto(fechaInput) {
@@ -526,23 +548,29 @@
       let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
 
       if (item.FechaVencimiento) {
-        const fechaVenc = new Date(item.FechaVencimiento);
-        fechaStr = fechaVenc.toLocaleDateString('es-AR');
-        fechaVenc.setHours(0, 0, 0, 0);
-
-        const diasPreaviso = parseInt(item.DiasPreaviso) || 30;
-        const fechaPreaviso = new Date(fechaVenc);
-        fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
-
-        if (fechaVenc < hoy) {
-          claseFondo = 'list-group-item-danger';
-          badge = `<span class="badge bg-danger">Vencido</span>`;
-        } else if (hoy >= fechaPreaviso) {
-          claseFondo = 'list-group-item-warning';
-          badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
+        const fechaVenc = new Date(item.FechaVencimiento); // Intenta parsear la fecha
+        if (isNaN(fechaVenc.getTime())) { // Si la fecha es inválida...
+            fechaStr = "Fecha Inválida";
+            claseFondo = 'list-group-item-dark';
+            badge = `<span class="badge bg-dark">Error en dato</span>`;
         } else {
-          claseFondo = 'list-group-item-success';
-          badge = `<span class="badge bg-success">Vigente</span>`;
+            fechaStr = fechaVenc.toLocaleDateString('es-AR');
+            fechaVenc.setHours(0, 0, 0, 0);
+
+            const diasPreaviso = parseInt(item.DiasPreaviso) || 30;
+            const fechaPreaviso = new Date(fechaVenc);
+            fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
+
+            if (fechaVenc < hoy) {
+              claseFondo = 'list-group-item-danger';
+              badge = `<span class="badge bg-danger">Vencido</span>`;
+            } else if (hoy >= fechaPreaviso) {
+              claseFondo = 'list-group-item-warning';
+              badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
+            } else {
+              claseFondo = 'list-group-item-success';
+              badge = `<span class="badge bg-success">Vigente</span>`;
+            }
         }
       }
 
