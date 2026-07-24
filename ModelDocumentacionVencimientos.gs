@@ -18,40 +18,52 @@ class ModelDocumentacionVencimientos extends BaseModel {
    * @param {string} idChofer El ID del chofer a verificar (ej. 'CH-001').
    * @returns {{isValid: boolean, message: string}} Objeto con el resultado de la validación.
    */
-  checkVencimientosObligatorios(idChofer) {
+  checkVencimientosObligatorios(idEntidad, tipoEntidad = 'Chofer') {
     try {
-      // Obtener todos los tipos de documentación que son obligatorios para choferes
-      const tiposObligatorios = this.docTiposModel.getData({
-        EsObligatorio: 'SI',
-        AplicaA: 'Chofer'
-      });
+      // Obtener todos los tipos de documentación que son obligatorios para la entidad
+      const todosTipos = this.docTiposModel.getData();
+      const tiposObligatorios = todosTipos.filter(t => 
+          t.EsObligatorio === 'SI' && 
+          String(t.AplicaA || '').trim() === tipoEntidad
+      );
 
       if (tiposObligatorios.length === 0) {
         return { isValid: true, message: 'No hay documentación obligatoria configurada.' };
       }
 
-      // Obtener todos los vencimientos para el chofer dado
-      const vencimientosChofer = this.getData({ ID_Chofer: idChofer });
+      // Obtener todos los vencimientos para la entidad dada
+      const todosVencimientos = this.getData();
+      const vencimientosEntidad = todosVencimientos.filter(v => String(v.ID_Chofer || '').trim() === String(idEntidad).trim());
+      
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0); // Normalizar a la medianoche para comparar solo fechas
 
       for (const tipo of tiposObligatorios) {
-        const vencimiento = vencimientosChofer.find(v => v.ID_Documentacion_Tipo === tipo.ID);
+        const vencimiento = vencimientosEntidad.find(v => v.ID_Documentacion_Tipo === tipo.ID);
 
-        if (!vencimiento) {
-          return { isValid: false, message: `Falta la documentación obligatoria: ${tipo.Nombre}.` };
+        if (!vencimiento || !vencimiento.FechaVencimiento) {
+          return { isValid: false, message: `Documentación VENCIDA (Falta cargar: ${tipo.Nombre}).` };
         }
 
         const fechaVencimiento = new Date(vencimiento.FechaVencimiento);
-        if (fechaVencimiento < hoy) {
-          return { isValid: false, message: `La documentación "${tipo.Nombre}" está vencida (Fecha: ${fechaVencimiento.toLocaleDateString()}).` };
+        if (isNaN(fechaVencimiento.getTime())) {
+            return { isValid: false, message: `La fecha para "${tipo.Nombre}" es inválida.` };
+        }
+        fechaVencimiento.setHours(0,0,0,0);
+
+        const diasTolerancia = parseInt(tipo.DiasTolerancia) || 0;
+        const fechaLimite = new Date(fechaVencimiento);
+        fechaLimite.setDate(fechaLimite.getDate() + diasTolerancia);
+
+        if (fechaLimite < hoy) {
+          return { isValid: false, message: `La documentación "${tipo.Nombre}" está vencida y fuera de tolerancia (Vence: ${fechaVencimiento.toLocaleDateString()}).` };
         }
       }
 
       return { isValid: true, message: 'Documentación obligatoria vigente.' };
     } catch (error) {
       Logger.log(`Error en checkVencimientosObligatorios: ${error.message}`);
-      throw new Error(`No se pudo verificar la documentación del chofer ${idChofer}.`);
+      throw new Error(`No se pudo verificar la documentación de la entidad ${idEntidad}.`);
     }
   }
 }
@@ -101,6 +113,76 @@ function apiGetVencimientosEntidad(usuarioApp, tipoEntidad, idEntidad) {
   } catch (e) {
     Logger.log(`ERROR en apiGetVencimientosEntidad: ${e.message} ${e.stack}`);
     return { success: false, error: `Error al obtener vencimientos: ${e.message}` };
+  }
+}
+
+function apiCheckVencimientosEntidad(usuarioApp, idEntidad, tipoEntidad) {
+  try {
+    const p = new PermisosModel(usuarioApp);
+    p.checkAccess('VIAJES', 'Read'); // Check if user can even see the trips module
+
+    if (!idEntidad) {
+        return { success: true, status: 'OK', message: 'No se seleccionó entidad.' };
+    }
+
+    const vencimientosModel = new ModelDocumentacionVencimientos(usuarioApp);
+    const todosTipos = vencimientosModel.docTiposModel.getData();
+    const tiposObligatorios = todosTipos.filter(t => 
+        t.EsObligatorio === 'SI' && 
+        String(t.AplicaA || '').trim() === tipoEntidad
+    );
+
+    if (tiposObligatorios.length === 0) {
+      return { success: true, status: 'OK', message: 'No hay documentación obligatoria configurada.' };
+    }
+
+    const todosVencimientos = vencimientosModel.getData();
+    const vencimientosEntidad = todosVencimientos.filter(v => String(v.ID_Chofer || '').trim() === String(idEntidad).trim());
+    
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    let warnings = [];
+
+    for (const tipo of tiposObligatorios) {
+      const vencimiento = vencimientosEntidad.find(v => v.ID_Documentacion_Tipo === tipo.ID);
+
+      if (!vencimiento || !vencimiento.FechaVencimiento) {
+        return { success: true, status: 'VENCIDO', message: `Documentación VENCIDA (Falta cargar: ${tipo.Nombre}).` };
+      }
+
+      const fechaVencimiento = new Date(vencimiento.FechaVencimiento);
+      if (isNaN(fechaVencimiento.getTime())) {
+          return { success: true, status: 'VENCIDO', message: `La fecha para "${tipo.Nombre}" es inválida.` };
+      }
+      fechaVencimiento.setHours(0,0,0,0);
+
+      const diasTolerancia = parseInt(tipo.DiasTolerancia) || 0;
+      const fechaLimite = new Date(fechaVencimiento);
+      fechaLimite.setDate(fechaLimite.getDate() + diasTolerancia);
+
+      if (fechaLimite < hoy) {
+        return { success: true, status: 'VENCIDO', message: `La documentación "${tipo.Nombre}" está vencida y fuera de tolerancia (Vence: ${fechaVencimiento.toLocaleDateString()}).` };
+      }
+
+      const diasPreaviso = parseInt(tipo.DiasPreaviso) || 30;
+      const fechaPreaviso = new Date(fechaVencimiento);
+      fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
+
+      if (hoy >= fechaPreaviso) {
+          warnings.push(`"${tipo.Nombre}" próximo a vencer (Vence: ${fechaVencimiento.toLocaleDateString()}).`);
+      }
+    }
+
+    if (warnings.length > 0) {
+        return { success: true, status: 'ADVERTENCIA', message: warnings.join('\n') };
+    }
+
+    return { success: true, status: 'OK', message: 'Documentación obligatoria vigente.' };
+
+  } catch (e) {
+    Logger.log(`Error en apiCheckVencimientosEntidad: ${e.message}`);
+    return { success: false, status: 'ERROR', message: `No se pudo verificar la documentación.` };
   }
 }
 

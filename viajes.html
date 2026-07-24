@@ -250,6 +250,8 @@
                                <select name="Chofer" id="viaj_selChofer" class="form-select form-select-sm" onchange="viaj_logicChoferChange()">
                                   <option value="">- Sin Asignar -</option>
                                </select>
+                               <!-- Feedback de Vencimientos -->
+                               <div id="viaj_choferFeedback" class="form-text small mt-1"></div>
                                <div class="row g-2 mt-1">
                                   <div class="col-6">
                                      <label class="form-label small">Categoría</label>
@@ -269,6 +271,8 @@
                                      <select name="Interno" id="viaj_selTractorInt" class="form-select form-select-sm" onchange="viaj_logicTractorChange()">
                                         <option value="">-</option>
                                      </select>
+                                     <!-- Feedback de Vencimientos -->
+                                     <div id="viaj_tractorFeedback" class="form-text small mt-1"></div>
                                   </div>
                                   <div class="col-8">
                                      <label class="form-label small">Patente</label>
@@ -276,9 +280,11 @@
                                   </div>
                                   <div class="col-4 mt-2">
                                      <label class="form-label small">Remolque</label>
-                                     <select name="Interno_R" id="viaj_selRemolqueInt" class="form-select form-select-sm" onchange="viaj_cargarPatenteRemolque()">
+                                     <select name="Interno_R" id="viaj_selRemolqueInt" class="form-select form-select-sm" onchange="viaj_logicRemolqueChange()">
                                         <option value="">-</option>
                                      </select>
+                                     <!-- Feedback de Vencimientos -->
+                                     <div id="viaj_remolqueFeedback" class="form-text small mt-1"></div>
                                   </div>
                                   <div class="col-8 mt-2">
                                      <label class="form-label small">Patente</label>
@@ -919,6 +925,11 @@
     viaj_calcTotales(); 
     viaj_calcDistancia(); 
     if (document.getElementById('viaj_chkControlado').checked) viaj_bloquearFormulario(true); else viaj_calcularLogicaEstado();
+    
+    viaj_logicChoferChange();
+    viaj_logicTractorChange();
+    viaj_logicRemolqueChange();
+
     new bootstrap.Tab(document.querySelector('#viaj_myTab button[data-bs-target="#viaj_prog"]')).show();
     new bootstrap.Modal(document.getElementById('viaj_modalViaje')).show();
   }
@@ -1089,8 +1100,73 @@
        }).apiGetInfoGeotab(tractorInt, fIni, fFin);
   }
 
-  function viaj_logicChoferChange() { viaj_cargarDatosChofer(); }
-  function viaj_logicTractorChange() { viaj_cargarPatenteTractor(); }
+  function viaj_logicChoferChange() { 
+    viaj_cargarDatosChofer(); 
+    const choferNombre = document.getElementById('viaj_selChofer').value;
+    const chofer = viaj_listasGlobales.choferes.find(c => c.Nombre === choferNombre);
+    const legajo = chofer ? chofer.Legajo : null;
+    viaj_verificarVencimientos('viaj_choferFeedback', legajo, 'Chofer');
+  }
+  function viaj_logicTractorChange() { 
+    viaj_cargarPatenteTractor(); 
+    const idEntidad = document.getElementById('viaj_selTractorInt').value;
+    viaj_verificarVencimientos('viaj_tractorFeedback', idEntidad, 'Unidad');
+  }
+  function viaj_logicRemolqueChange() {
+    viaj_cargarPatenteRemolque();
+    const idEntidad = document.getElementById('viaj_selRemolqueInt').value;
+    viaj_verificarVencimientos('viaj_remolqueFeedback', idEntidad, 'Unidad');
+  }
+
+  function viaj_verificarVencimientos(feedbackId, idEntidad, tipoEntidad) {
+    const feedbackDiv = document.getElementById(feedbackId);
+    feedbackDiv.innerHTML = '';
+
+    if (!idEntidad) {
+        viaj_revisarEstadoBotonGuardar();
+        return;
+    }
+
+    feedbackDiv.innerHTML = '<span class="text-muted">Verificando...</span>';
+    const usu = sessionStorage.getItem('sys_usuario') || '';
+
+    google.script.run
+        .withSuccessHandler(res => {
+            if (!res.success) {
+                feedbackDiv.className = 'form-text small mt-1 text-danger fw-bold';
+                feedbackDiv.innerHTML = `Error: ${res.message}`;
+            } else if (res.status === 'VENCIDO') {
+                feedbackDiv.className = 'form-text small mt-1 text-danger fw-bold';
+                feedbackDiv.innerHTML = `🚫 NO HABILITADO: ${res.message}`;
+            } else if (res.status === 'ADVERTENCIA') {
+                feedbackDiv.className = 'form-text small mt-1 text-warning fw-bold';
+                feedbackDiv.innerHTML = `⚠️ ATENCIÓN: ${res.message.replace(/\n/g, '<br>')}`;
+            } else { // OK
+                feedbackDiv.className = 'form-text small mt-1 text-success';
+                feedbackDiv.innerHTML = '✅ Habilitado';
+            }
+            viaj_revisarEstadoBotonGuardar();
+        })
+        .withFailureHandler(err => {
+            feedbackDiv.className = 'form-text small mt-1 text-danger fw-bold';
+            feedbackDiv.innerHTML = `Error red: ${err.message}`;
+            viaj_revisarEstadoBotonGuardar();
+        })
+        .apiCheckVencimientosEntidad(usu, idEntidad, tipoEntidad);
+  }
+
+  function viaj_revisarEstadoBotonGuardar() {
+    const saveBtn = document.getElementById('viaj_btnGuardar');
+    const feedbacks = [
+        document.getElementById('viaj_choferFeedback'),
+        document.getElementById('viaj_tractorFeedback'),
+        document.getElementById('viaj_remolqueFeedback')
+    ];
+    const algunoVencido = feedbacks.some(div => div.innerHTML.includes('🚫'));
+    saveBtn.disabled = algunoVencido;
+    saveBtn.title = algunoVencido ? "No se puede guardar porque uno de los recursos tiene documentación vencida." : "";
+  }
+
   function viaj_cargarDatosChofer() {
      const nom = document.getElementById('viaj_selChofer').value;
      const chofer = viaj_listasGlobales.choferes.find(c => c.Nombre === nom);
@@ -1107,6 +1183,11 @@
   function viaj_padId(id) { if (!id) return ""; return String(id).padStart(8, '0'); }
   
   function viaj_abrirModal() { 
+      document.getElementById('viaj_choferFeedback').innerHTML = '';
+      document.getElementById('viaj_tractorFeedback').innerHTML = '';
+      document.getElementById('viaj_remolqueFeedback').innerHTML = '';
+      document.getElementById('viaj_btnGuardar').disabled = false;
+
       document.getElementById('viaj_fileRemito').value = ""; 
       document.getElementById('viaj_listRemitos').innerHTML = '<tr><td colspan="2" class="text-center text-muted">Sin archivos</td></tr>'; 
       document.getElementById('viaj_formViaje').reset(); 

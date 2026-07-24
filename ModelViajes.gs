@@ -198,6 +198,42 @@ function apiSaveViaje(usuarioApp, form) {
     // =========================================================================
     // 5. VALIDACIÓN DE SEGURIDAD ESPECÍFICA (Permiso_Control_Viajes)
     // =========================================================================
+ el     // 5. VALIDACIÓN DE VENCIMIENTOS DE DOCUMENTACIÓN
+    // Se valida si se está creando un viaje con un recurso, o si se está modificando el recurso de un viaje existente.
+    const vencimientosModel = new ModelDocumentacionVencimientos(usuarioApp);
+
+    // --- CHOFER ---
+    if (form.Chofer && (form.actionType === 'create' || (currentState && currentState.Chofer !== form.Chofer))) {
+        const choferesDb = new BaseModel('CHOFERES', 'Legajo', usuarioApp);
+        const choferData = choferesDb.getData().find(c => c.Nombre === form.Chofer);
+        
+        if (choferData && choferData.Legajo) {
+            const validacion = vencimientosModel.checkVencimientosObligatorios(choferData.Legajo, 'Chofer');
+            if (!validacion.isValid) {
+                throw new Error(`No se puede asignar al chofer ${form.Chofer}. Motivo: ${validacion.message}`);
+            }
+        }
+    }
+
+    // --- TRACTOR ---
+    if (form.Interno && (form.actionType === 'create' || (currentState && currentState.Interno !== form.Interno))) {
+        const validacion = vencimientosModel.checkVencimientosObligatorios(form.Interno, 'Unidad');
+        if (!validacion.isValid) {
+            throw new Error(`No se puede asignar el Tractor Interno ${form.Interno}. Motivo: ${validacion.message}`);
+        }
+    }
+
+    // --- REMOLQUE ---
+    if (form.Interno_R && (form.actionType === 'create' || (currentState && currentState.Interno_R !== form.Interno_R))) {
+        const validacion = vencimientosModel.checkVencimientosObligatorios(form.Interno_R, 'Unidad');
+        if (!validacion.isValid) {
+            throw new Error(`No se puede asignar el Remolque Interno ${form.Interno_R}. Motivo: ${validacion.message}`);
+        }
+    }
+    // =========================================================================
+
+
+    // 6. VALIDACIÓN DE SEGURIDAD ESPECÍFICA (Permiso_Control_Viajes)
     if (isNowControlled !== wasControlled) {
          const userEmail = usuarioApp || "";
          const dbPermisos = new BaseModel('PERMISOS', 'Email', usuarioApp); // Inyectado
@@ -216,7 +252,7 @@ function apiSaveViaje(usuarioApp, form) {
     }
     // =========================================================================
 
-    // 6. Validaciones de Negocio si está Controlado
+    // 7. Validaciones de Negocio si está Controlado
     if (currentState && wasControlled) {
          if (isNowControlled) {
              // Sigue controlado
@@ -268,7 +304,7 @@ function apiSaveViaje(usuarioApp, form) {
         form.Estado = "Controlado";
     }
 
-    // 7. Validación Duplicados
+    // 8. Validación Duplicados
     if (form.Cliente && form.REMITO) {
        const clienteInput = String(form.Cliente).trim().toUpperCase();
        const remitoInput = String(form.REMITO).trim().toUpperCase();
@@ -285,7 +321,7 @@ function apiSaveViaje(usuarioApp, form) {
        }
     }
 
-    // 8. Guardado
+    // 9. Guardado
     if (form.actionType === 'create') {
        if (!form.Nro_Viaje) form.Nro_Viaje = db.getNextId();
        idViaje = form.Nro_Viaje; 
@@ -295,7 +331,7 @@ function apiSaveViaje(usuarioApp, form) {
        idViaje = form.Nro_Viaje;
     }
 
-    // 9. Procesar Archivo
+    // 10. Procesar Archivo
     if (form._fileData && form._mimeType && idViaje) {
        guardarFotoViaje(idViaje, form._fileData, form._mimeType);
     }
