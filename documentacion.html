@@ -1,70 +1,26 @@
-<style>
-  .vencido { background-color: #ffdddd !important; }
-  .proximo { background-color: #fff3cd !important; }
-  .vigente { background-color: #d1e7dd !important; }
-</style>
-
-<h2 class="mb-3">Gestión de Documentación</h2>
+<h2 class="mb-3">Administración de Tipos de Documento</h2>
 <div id="doc_alertBox" class="alert alert-danger d-none shadow-sm"></div>
 
-<!-- Pestañas de Navegación -->
-<ul class="nav nav-tabs" id="docTab" role="tablist">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestionVencimientos" type="button" role="tab">Gestión de Vencimientos</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link" id="tipos-tab" data-bs-toggle="tab" data-bs-target="#adminTipos" type="button" role="tab">Tipos de Documento (ABM)</button>
-  </li>
-</ul>
-
-<!-- Contenido de las Pestañas -->
-<div class="tab-content" id="docTabContent">
-
-  <!-- Pestaña 1: Gestión de Vencimientos -->
-  <div class="tab-pane fade show active" id="gestionVencimientos" role="tabpanel">
-    <div class="card">
-      <div class="card-body">
-        <div class="row align-items-end">
-          <div class="col-md-6">
-            <label for="doc_selChoferUnidad" class="form-label">Seleccionar Chofer o Unidad:</label>
-            <select id="doc_selChoferUnidad" class="form-select" onchange="doc_onSelectChoferUnidadChange()">
-              <option value="">Cargando...</option>
-            </select>
-          </div>
-        </div>
-        <hr>
-        <div id="doc_vencimientosList" class="mt-3">
-          <p class="text-muted">Seleccione un chofer o unidad para ver sus vencimientos.</p>
-        </div>
-      </div>
+<div class="card">
+  <div class="card-body">
+    <button id="doc_btnNuevoTipo" class="btn btn-success mb-3 d-none" onclick="doc_abrirModalTipo(true)">+ Nuevo Tipo</button>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Acciones</th>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Es Obligatorio</th>
+            <th>Aplica A</th>
+            <th class="text-center">Días Tolerancia</th>
+            <th class="text-center">Días Preaviso</th>
+          </tr>
+        </thead>
+        <tbody id="doc_tiposTableBody"></tbody>
+      </table>
     </div>
   </div>
-
-  <!-- Pestaña 2: ABM Tipos de Documento -->
-  <div class="tab-pane fade" id="adminTipos" role="tabpanel">
-    <div class="card">
-      <div class="card-body">
-        <button id="doc_btnNuevoTipo" class="btn btn-success mb-3 d-none" onclick="doc_abrirModalTipo(true)">+ Nuevo Tipo</button>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>Acciones</th>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Es Obligatorio</th>
-                <th>Aplica A</th>
-                <th class="text-center">Días Tolerancia</th>
-                <th class="text-center">Días Preaviso</th>
-              </tr>
-            </thead>
-            <tbody id="doc_tiposTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>
 
 <!-- Modal para ABM de Tipos de Documento -->
@@ -434,22 +390,6 @@
     const alertBox = document.getElementById('doc_alertBox');
     alertBox.innerText = 'Error: ' + error.message;
     alertBox.classList.remove('d-none');
-  }
-
-  // Reutilizamos funciones de fecha de otros módulos si existen
-  if (typeof chof_deTextoAFechaInput === 'undefined') {
-    function chof_deTextoAFechaInput(fechaTexto) {
-      if (!fechaTexto || !fechaTexto.includes('/')) return '';
-      const [d, m, y] = fechaTexto.split('/');
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-    }
-  }
-  if (typeof chof_deInputAFechaTexto === 'undefined') {
-    function chof_deInputAFechaTexto(fechaInput) {
-      if (!fechaInput || !fechaInput.includes('-')) return '';
-      const [y, m, d] = fechaInput.split('-');
-      return `${d}/${m}/${y}`;
-    }
   }
 
   // --- INICIO ---

@@ -7,8 +7,8 @@ class ModelDocumentacionTipos extends BaseModel {
   /**
    * @constructor
    */
-  constructor() {
-    super('DOCUMENTACION_TIPOS', 'ID');
+  constructor(usuarioApp) {
+    super('DOCUMENTACION_TIPOS', 'ID', usuarioApp);
   }
 }
 
@@ -19,7 +19,7 @@ function apiGetDocumentacionTipos(usuarioApp) {
     const p = new PermisosModel(usuarioApp);
     const role = p.checkAccess('DOCUMENTACION_TIPOS', 'Read');
     
-    const db = new ModelDocumentacionTipos();
+    const db = new ModelDocumentacionTipos(usuarioApp);
     const data = db.getData();
 
     return { success: true, data: data, role: role };
@@ -34,7 +34,7 @@ function apiSaveDocumentacionTipo(usuarioApp, formObject) {
     const accessType = formObject.actionType === 'create' ? 'Create' : 'Update';
     p.checkAccess('DOCUMENTACION_TIPOS', accessType);
 
-    const db = new ModelDocumentacionTipos();
+    const db = new ModelDocumentacionTipos(usuarioApp);
     if (formObject.actionType === 'create') {
       db.create(formObject);
     } else {
@@ -51,7 +51,7 @@ function apiDeleteDocumentacionTipo(usuarioApp, id) {
     const p = new PermisosModel(usuarioApp);
     p.checkAccess('DOCUMENTACION_TIPOS', 'Delete');
     
-    const db = new ModelDocumentacionTipos();
+    const db = new ModelDocumentacionTipos(usuarioApp);
     db.delete(id);
     return { success: true };
   } catch (e) {

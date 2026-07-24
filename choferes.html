@@ -51,14 +51,29 @@
         <h5 class="modal-title">Ficha del Chofer</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <form id="chof_formChofer">
-          <input type="hidden" name="actionType" id="chof_actionType">
-          
-          <div class="row g-3">
-            
-            <div class="col-md-3"> 
-               <h6 class="text-primary border-bottom pb-2">Identificación</h6>
+      <div class="modal-body p-0">
+
+        <!-- Pestañas -->
+        <ul class="nav nav-tabs px-3 pt-2" id="chof_tab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="chof-datos-tab" data-bs-toggle="tab" data-bs-target="#chof-datos" type="button" role="tab">Datos del Chofer</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="chof-vencimientos-tab" data-bs-toggle="tab" data-bs-target="#chof-vencimientos" type="button" role="tab">Vencimientos</button>
+          </li>
+        </ul>
+
+        <!-- Contenido de Pestañas -->
+        <div class="tab-content" id="chof_tabContent">
+
+          <!-- Pestaña 1: Datos del Chofer -->
+          <div class="tab-pane fade show active p-3" id="chof-datos" role="tabpanel">
+            <form id="chof_formChofer">
+              <input type="hidden" name="actionType" id="chof_actionType">
+              
+              <div class="row g-3">
+                <div class="col-md-3"> 
+                   <h6 class="text-primary border-bottom pb-2">Identificación</h6>
                <label class="form-label small">Legajo</label>
                <input type="text" name="Legajo" class="form-control form-control-sm" required>
 
@@ -81,11 +96,11 @@
                  <option value="Casado">Casado</option>
                  <option value="Divorciado">Divorciado</option>
                  <option value="Viudo">Viudo</option>
-               </select>
-            </div>
+                   </select>
+                </div>
 
-            <div class="col-md-3">
-               <h6 class="text-primary border-bottom pb-2">Ubicación</h6>
+                <div class="col-md-3">
+                   <h6 class="text-primary border-bottom pb-2">Ubicación</h6>
                
                <label class="form-label small">Domicilio</label>
                <div class="input-group input-group-sm">
@@ -111,10 +126,10 @@
 
                <label class="form-label small mt-2">Mail</label>
                <input type="email" name="Mail" class="form-control form-control-sm">
-            </div>
+                </div>
 
-            <div class="col-md-3">
-               <h6 class="text-primary border-bottom pb-2">Datos Laborales</h6>
+                <div class="col-md-3">
+                   <h6 class="text-primary border-bottom pb-2">Datos Laborales</h6>
 
                <label class="form-label small">Empresa Transporte</label>
                <select name="NOMBRE_EMPRESA" id="chof_selEmpresa" class="form-select form-select-sm">
@@ -149,10 +164,10 @@
                <select name="PATENTE_REMOLQUE" id="chof_selRemolque" class="form-select form-select-sm">
                   <option value="">- Asignar -</option>
                </select>
-            </div>
+                </div>
 
-            <div class="col-md-3">
-               <h6 class="text-primary border-bottom pb-2">Otros / Geotab</h6>
+                <div class="col-md-3">
+                   <h6 class="text-primary border-bottom pb-2">Otros / Geotab</h6>
 
                <label class="form-label small">ID Geotab</label>
                <input type="text" name="ID_Geotab" class="form-control form-control-sm">
@@ -166,10 +181,20 @@
                
                <label class="form-label small mt-2">Relación</label>
                <input type="text" name="RelacionContacto" class="form-control form-control-sm">
-            </div>
+                </div>
 
-          </div> 
-        </form>
+              </div> 
+            </form>
+          </div>
+
+          <!-- Pestaña 2: Vencimientos -->
+          <div class="tab-pane fade p-3" id="chof-vencimientos" role="tabpanel">
+            <div id="chof_vencimientosContainer">
+              <p class="text-muted">Cargando vencimientos...</p>
+            </div>
+          </div>
+
+        </div>
       </div>
       <div class="modal-footer bg-light">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -179,9 +204,38 @@
   </div>
 </div>
 
+<!-- Modal para Editar Fecha de Vencimiento -->
+<div class="modal fade" id="chof_modalVencimiento" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="chof_modalVencimientoTitle">Editar Vencimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="chof_formVencimiento">
+          <input type="hidden" name="actionType" id="chof_vencActionType">
+          <input type="hidden" name="ID">
+          <input type="hidden" name="ID_Chofer">
+          <input type="hidden" name="ID_Documentacion_Tipo">
+          <div class="mb-3">
+            <label class="form-label">Fecha de Vencimiento</label>
+            <input type="date" name="FechaVencimiento" class="form-control" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="chof_guardarVencimiento()">Guardar Fecha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   var chof_userRole = null;
   var chof_listasGlobales = {}; 
+  var chof_vencimientosRole = null;
 
   function chof_cargarDatos() {
     showLoading(true);
@@ -394,6 +448,10 @@
     }
 
     form.elements['Legajo'].readOnly = true;
+
+    // Cargar vencimientos
+    chof_cargarVencimientos(row.Legajo);
+
     new bootstrap.Modal(document.getElementById('chof_modalChofer')).show();
   }
 
@@ -426,6 +484,140 @@
       })
       .withFailureHandler(chof_handleError)
       .apiSaveChofer(usu, formData); // Pasamos identidad
+  }
+
+  // --- LÓGICA DE VENCIMIENTOS ---
+
+  function chof_cargarVencimientos(legajo) {
+    const container = document.getElementById('chof_vencimientosContainer');
+    container.innerHTML = '<p class="text-muted">Cargando vencimientos...</p>';
+    const usu = sessionStorage.getItem('sys_usuario') || '';
+
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          chof_vencimientosRole = res.role;
+          chof_renderVencimientos(res.data, legajo);
+        } else {
+          container.innerHTML = `<div class="alert alert-warning">${res.error}</div>`;
+        }
+      })
+      .withFailureHandler(err => {
+        container.innerHTML = `<div class="alert alert-danger">Error de red: ${err.message}</div>`;
+      })
+      .apiGetVencimientosEntidad(usu, 'Chofer', legajo);
+  }
+
+  function chof_renderVencimientos(vencimientos, legajo) {
+    const container = document.getElementById('chof_vencimientosContainer');
+    if (!vencimientos || vencimientos.length === 0) {
+      container.innerHTML = '<p class="text-info">No hay tipos de documentación configurados para Choferes.</p>';
+      return;
+    }
+
+    let html = '<ul class="list-group">';
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    vencimientos.forEach(item => {
+      let fechaStr = "No cargado";
+      let claseFondo = "";
+      let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
+
+      if (item.FechaVencimiento) {
+        const fechaVenc = new Date(item.FechaVencimiento);
+        fechaStr = fechaVenc.toLocaleDateString('es-AR');
+        fechaVenc.setHours(0, 0, 0, 0);
+
+        const diasPreaviso = parseInt(item.DiasPreaviso) || 30;
+        const fechaPreaviso = new Date(fechaVenc);
+        fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
+
+        if (fechaVenc < hoy) {
+          claseFondo = 'list-group-item-danger';
+          badge = `<span class="badge bg-danger">Vencido</span>`;
+        } else if (hoy >= fechaPreaviso) {
+          claseFondo = 'list-group-item-warning';
+          badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
+        } else {
+          claseFondo = 'list-group-item-success';
+          badge = `<span class="badge bg-success">Vigente</span>`;
+        }
+      }
+
+      let botonEditar = '';
+      if (chof_vencimientosRole === 'Admin' || chof_vencimientosRole === 'Update') {
+        const vencimientoData = {
+          ID: item.ID_Vencimiento,
+          ID_Chofer: legajo,
+          ID_Documentacion_Tipo: item.ID_Documentacion_Tipo,
+          FechaVencimiento: item.FechaVencimiento,
+          NombreDocumento: item.Nombre
+        };
+        const dataEncoded = encodeURIComponent(JSON.stringify(vencimientoData));
+        botonEditar = `<button class="btn btn-sm btn-outline-primary" onclick="chof_abrirModalVencimiento(decodeURIComponent('${dataEncoded}'))">✏️ Editar</button>`;
+      }
+
+      html += `<li class="list-group-item d-flex justify-content-between align-items-center ${claseFondo}">
+                  <div>
+                    <strong>${item.Nombre}</strong>
+                    <small class="d-block text-muted">Vence: ${fechaStr}</small>
+                  </div>
+                  <div class="d-flex align-items-center">
+                    ${badge}
+                    <div class="ms-3">${botonEditar}</div>
+                  </div>
+               </li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+  }
+
+  function chof_abrirModalVencimiento(dataString) {
+    const data = JSON.parse(dataString);
+    const form = document.getElementById('chof_formVencimiento');
+    form.reset();
+    
+    document.getElementById('chof_modalVencimientoTitle').innerText = `Editar: ${data.NombreDocumento}`;
+    form.elements['actionType'].value = data.ID ? 'update' : 'create';
+    form.elements['ID'].value = data.ID || '';
+    form.elements['ID_Chofer'].value = data.ID_Chofer;
+    form.elements['ID_Documentacion_Tipo'].value = data.ID_Documentacion_Tipo;
+    form.elements['FechaVencimiento'].value = data.FechaVencimiento ? chof_deTextoAFechaInput(data.FechaVencimiento) : '';
+
+    new bootstrap.Modal(document.getElementById('chof_modalVencimiento')).show();
+  }
+
+  function chof_guardarVencimiento() {
+    const form = document.getElementById('chof_formVencimiento');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => {
+      if (key === 'FechaVencimiento' && value) {
+        formData[key] = chof_deInputAFechaTexto(value);
+      } else {
+        formData[key] = value;
+      }
+    });
+
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || '';
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('chof_modalVencimiento')).hide();
+          chof_cargarVencimientos(formData.ID_Chofer); // Recargar la lista
+        } else {
+          alert('Error al guardar vencimiento: ' + res.error);
+        }
+      })
+      .withFailureHandler(err => {
+        showLoading(false);
+        alert('Error de red: ' + err.message);
+      })
+      .apiSaveVencimiento(usu, formData);
   }
 
   function chof_eliminar(id) {
