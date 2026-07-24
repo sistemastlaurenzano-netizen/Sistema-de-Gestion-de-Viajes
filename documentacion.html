@@ -78,246 +78,45 @@
   </div>
 </div>
 
-<!-- Modal para Editar Fecha de Vencimiento -->
-<div class="modal fade" id="doc_modalVencimiento" tabindex="-1">
-  <div class="modal-dialog modal-sm">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="doc_modalVencimientoTitle">Editar Vencimiento</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <form id="doc_formVencimiento">
-          <input type="hidden" name="actionType" id="doc_vencActionType">
-          <input type="hidden" name="ID">
-          <input type="hidden" name="ID_Chofer">
-          <input type="hidden" name="ID_Documentacion_Tipo">
-          <div class="mb-3">
-            <label class="form-label">Fecha de Vencimiento</label>
-            <input type="date" name="FechaVencimiento" class="form-control" required>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="doc_guardarVencimiento()">Guardar Fecha</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <script>
-  var doc_listas = { choferes: [], vehiculos: [], tipos: [] };
-  var doc_roles = { tipos: 'None', vencimientos: 'None' };
-  var doc_vencimientosActuales = [];
+  var doc_tipos = [];
+  var doc_role = 'None';
   const usu = sessionStorage.getItem('sys_usuario') || '';
 
   // --- INICIALIZACIÓN ---
   function doc_init() {
     showLoading(true);
     document.getElementById('doc_alertBox').classList.add('d-none');
-
-    // Hacemos una llamada múltiple para traer todos los datos necesarios
-    Promise.all([
-      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetChoferes(usu)),
-      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetVehiculos(usu)),
-      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetDocumentacionTipos(usu))
-    ]).then(([resChoferes, resVehiculos, resTipos]) => {
-      showLoading(false);
-      
-      if (resChoferes.success) doc_listas.choferes = resChoferes.data;
-      if (resVehiculos.success) doc_listas.vehiculos = resVehiculos.data;
-      if (resTipos.success) {
-        doc_listas.tipos = resTipos.data;
-        doc_roles.tipos = resTipos.role;
-      } else {
-        doc_handleError({ message: 'No se pudieron cargar los Tipos de Documento. ' + resTipos.error });
-      }
-      
-      doc_renderSelectChoferUnidad();
-      doc_renderTipos();
-
-    }).catch(doc_handleError);
-  }
-
-  // --- PESTAÑA 1: GESTIÓN DE VENCIMIENTOS ---
-  function doc_renderSelectChoferUnidad() {
-    const select = document.getElementById('doc_selChoferUnidad');
-    select.innerHTML = '<option value="">- Seleccione -</option>';
-
-    const optgroupChoferes = document.createElement('optgroup');
-    optgroupChoferes.label = 'Choferes';
-    doc_listas.choferes.forEach(c => {
-      if (c.Legajo && c.Nombre) {
-        const opt = new Option(`${c.Nombre} (Leg: ${c.Legajo})`, `chofer_${c.Legajo}`);
-        optgroupChoferes.appendChild(opt);
-      }
-    });
-    select.appendChild(optgroupChoferes);
-
-    const optgroupUnidades = document.createElement('optgroup');
-    optgroupUnidades.label = 'Unidades';
-    doc_listas.vehiculos.forEach(v => {
-      if (v.Interno) {
-        const opt = new Option(`${v.Marca} ${v.Modelo} (Int: ${v.Interno})`, `unidad_${v.Interno}`);
-        optgroupUnidades.appendChild(opt);
-      }
-    });
-    select.appendChild(optgroupUnidades);
-  }
-
-  function doc_onSelectChoferUnidadChange() {
-    const select = document.getElementById('doc_selChoferUnidad');
-    const selectedValue = select.value;
-    const listContainer = document.getElementById('doc_vencimientosList');
-
-    if (!selectedValue) {
-      listContainer.innerHTML = '<p class="text-muted">Seleccione un chofer o unidad para ver sus vencimientos.</p>';
-      return;
-    }
-
-    listContainer.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Cargando vencimientos...</div>';
-    const [tipoEntidad, idEntidad] = selectedValue.split('_');
-
+    
     google.script.run
       .withSuccessHandler(res => {
-        if (res.success) {
-          doc_vencimientosActuales = res.data;
-          doc_roles.vencimientos = res.role;
-          doc_renderVencimientosList(tipoEntidad, idEntidad);
-        } else {
-          listContainer.innerHTML = `<div class="alert alert-warning">${res.error}</div>`;
-        }
-      })
-      .withFailureHandler(doc_handleError)
-      .apiGetVencimientos(usu, { ID_Chofer: idEntidad });
-  }
-
-  function doc_renderVencimientosList(tipoEntidad, idEntidad) {
-    const listContainer = document.getElementById('doc_vencimientosList');
-    const tiposAplicables = doc_listas.tipos.filter(t => t.AplicaA.toLowerCase() === tipoEntidad.toLowerCase());
-    
-    if (tiposAplicables.length === 0) {
-      listContainer.innerHTML = '<p class="text-info">No hay tipos de documentación configurados para esta entidad.</p>';
-      return;
-    }
-
-    let html = '<ul class="list-group">';
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Normalizar a la medianoche para comparar solo fechas
-
-    tiposAplicables.forEach(tipo => {
-      const vencimiento = doc_vencimientosActuales.find(v => v.ID_Documentacion_Tipo === tipo.ID);
-      let fechaStr = "No cargado";
-      let claseFondo = "";
-      let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
-
-      if (vencimiento && vencimiento.FechaVencimiento) {
-        const fechaVenc = new Date(vencimiento.FechaVencimiento);
-        fechaStr = fechaVenc.toLocaleDateString('es-AR'); // Formato DD/MM/YYYY
-        fechaVenc.setHours(0, 0, 0, 0); // Normalizar fecha de vencimiento
-
-        const diasPreaviso = parseInt(tipo.DiasPreaviso) || 30;
-        const fechaPreaviso = new Date(fechaVenc);
-        fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
-
-        if (fechaVenc < hoy) {
-          claseFondo = 'vencido';
-          badge = `<span class="badge bg-danger">Vencido</span>`;
-        } else if (hoy >= fechaPreaviso) {
-          claseFondo = 'proximo';
-          badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
-        } else {
-          claseFondo = 'vigente';
-          badge = `<span class="badge bg-success">Vigente</span>`;
-        }
-      }
-
-      let botonEditar = '';
-      if (doc_roles.vencimientos === 'Admin' || doc_roles.vencimientos === 'Update') {
-        const vencimientoData = {
-          ID: vencimiento ? vencimiento.ID : null,
-          ID_Chofer: idEntidad,
-          ID_Documentacion_Tipo: tipo.ID,
-          FechaVencimiento: vencimiento ? vencimiento.FechaVencimiento : '',
-          NombreDocumento: tipo.Nombre
-        };
-        const dataEncoded = encodeURIComponent(JSON.stringify(vencimientoData));
-        botonEditar = `<button class="btn btn-sm btn-outline-primary" onclick="doc_abrirModalVencimiento(decodeURIComponent('${dataEncoded}'))">✏️ Editar</button>`;
-      }
-
-      html += `<li class="list-group-item d-flex justify-content-between align-items-center ${claseFondo}">
-                  <div>
-                    <strong>${tipo.Nombre}</strong>
-                    <small class="d-block text-muted">Vence: ${fechaStr}</small>
-                  </div>
-                  <div class="d-flex align-items-center">
-                    ${badge}
-                    <div class="ms-3">${botonEditar}</div>
-                  </div>
-               </li>`;
-    });
-    html += '</ul>';
-    listContainer.innerHTML = html;
-  }
-
-  function doc_abrirModalVencimiento(dataString) {
-    const data = JSON.parse(dataString);
-    const form = document.getElementById('doc_formVencimiento');
-    form.reset();
-    
-    document.getElementById('doc_modalVencimientoTitle').innerText = `Editar: ${data.NombreDocumento}`;
-    form.elements['actionType'].value = data.ID ? 'update' : 'create';
-    form.elements['ID'].value = data.ID || '';
-    form.elements['ID_Chofer'].value = data.ID_Chofer;
-    form.elements['ID_Documentacion_Tipo'].value = data.ID_Documentacion_Tipo;
-    form.elements['FechaVencimiento'].value = data.FechaVencimiento ? chof_deTextoAFechaInput(data.FechaVencimiento) : '';
-
-    new bootstrap.Modal(document.getElementById('doc_modalVencimiento')).show();
-  }
-
-  function doc_guardarVencimiento() {
-    const form = document.getElementById('doc_formVencimiento');
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-
-    const formData = {};
-    new FormData(form).forEach((value, key) => {
-      if (key === 'FechaVencimiento' && value) {
-        formData[key] = chof_deInputAFechaTexto(value);
-      } else {
-        formData[key] = value;
-      }
-    });
-
-    showLoading(true);
-    google.script.run
-      .withSuccessHandler(res => {
-        if (res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('doc_modalVencimiento')).hide();
-          doc_onSelectChoferUnidadChange(); // Recargar la lista
-        } else {
-          alert('Error al guardar: ' + res.error);
-        }
         showLoading(false);
+        if (res.success) {
+          doc_tipos = res.data;
+          doc_role = res.role;
+          doc_renderTipos();
+        } else {
+          doc_handleError({ message: 'No se pudieron cargar los Tipos de Documento. ' + res.error });
+        }
       })
       .withFailureHandler(doc_handleError)
-      .apiSaveVencimiento(usu, formData);
+      .apiGetDocumentacionTipos(usu);
   }
 
-  // --- PESTAÑA 2: ABM TIPOS ---
+  // --- ABM TIPOS ---
   function doc_renderTipos() {
     const tbody = document.getElementById('doc_tiposTableBody');
     tbody.innerHTML = '';
-    if (doc_roles.tipos === 'Admin' || doc_roles.tipos === 'Create') {
+    if (doc_role === 'Admin' || doc_role === 'Create') {
       document.getElementById('doc_btnNuevoTipo').classList.remove('d-none');
     }
 
-    doc_listas.tipos.forEach(tipo => {
+    doc_tipos.forEach(tipo => {
       let botones = '';
-      if (doc_roles.tipos === 'Admin' || doc_roles.tipos === 'Update') {
+      if (doc_role === 'Admin' || doc_role === 'Update') {
         botones += `<button class="btn btn-xs btn-warning" onclick='doc_abrirModalTipo(false, ${JSON.stringify(tipo)})'>✏️</button> `;
       }
-      if (doc_roles.tipos === 'Admin') {
+      if (doc_role === 'Admin') {
         botones += `<button class="btn btn-xs btn-danger" onclick="doc_eliminarTipo('${tipo.ID}')">🗑️</button>`;
       }
 
