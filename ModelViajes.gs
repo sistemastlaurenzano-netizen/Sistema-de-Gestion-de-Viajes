@@ -198,20 +198,26 @@ function apiSaveViaje(usuarioApp, form) {
     // =========================================================================
     // 5. VALIDACIÓN DE SEGURIDAD ESPECÍFICA (Permiso_Control_Viajes)
     // =========================================================================
- el     // 5. VALIDACIÓN DE VENCIMIENTOS DE DOCUMENTACIÓN
+    // 5. VALIDACIÓN DE VENCIMIENTOS DE DOCUMENTACIÓN
     // Se valida si se está creando un viaje con un recurso, o si se está modificando el recurso de un viaje existente.
     const vencimientosModel = new ModelDocumentacionVencimientos(usuarioApp);
 
     // --- CHOFER ---
     if (form.Chofer && (form.actionType === 'create' || (currentState && currentState.Chofer !== form.Chofer))) {
         const choferesDb = new BaseModel('CHOFERES', 'Legajo', usuarioApp);
-        const choferData = choferesDb.getData().find(c => c.Nombre === form.Chofer);
+        const todosChoferes = choferesDb.getData();
+        // Buscamos por nombre, que es lo que guarda el viaje.
+        const choferData = todosChoferes.find(c => (c.Nombre === form.Chofer) || (c['Nombre y Apellido'] === form.Chofer));
         
-        if (choferData && choferData.Legajo) {
-            const validacion = vencimientosModel.checkVencimientosObligatorios(choferData.Legajo, 'Chofer');
-            if (!validacion.isValid) {
-                throw new Error(`No se puede asignar al chofer ${form.Chofer}. Motivo: ${validacion.message}`);
-            }
+        if (!choferData || !choferData.Legajo) {
+            // Si se seleccionó un chofer pero no podemos encontrar su Legajo, es un error de integridad.
+            throw new Error(`No se pudo encontrar el Legajo para el chofer "${form.Chofer}". Verifique que el nombre sea correcto y único.`);
+        }
+
+        // Ahora que tenemos el Legajo, validamos.
+        const validacion = vencimientosModel.checkVencimientosObligatorios(choferData.Legajo, 'Chofer');
+        if (!validacion.isValid) {
+            throw new Error(`No se puede asignar al chofer ${form.Chofer}. Motivo: ${validacion.message}`);
         }
     }
 
