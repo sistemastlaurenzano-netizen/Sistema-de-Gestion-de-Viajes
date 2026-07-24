@@ -45,9 +45,9 @@ class ModelDocumentacionVencimientos extends BaseModel {
           return { isValid: false, message: `Documentación VENCIDA (Falta cargar: ${tipo.Nombre}).` };
         }
 
-        const fechaVencimiento = new Date(vencimiento.FechaVencimiento);
-        if (isNaN(fechaVencimiento.getTime())) {
-            return { isValid: false, message: `La fecha para "${tipo.Nombre}" es inválida.` };
+        const fechaVencimiento = _parseDateBackend(vencimiento.FechaVencimiento);
+        if (!fechaVencimiento) {
+            return { isValid: false, message: `La fecha para "${tipo.Nombre}" es inválida o tiene un formato incorrecto.` };
         }
         fechaVencimiento.setHours(0,0,0,0);
 
@@ -151,9 +151,9 @@ function apiCheckVencimientosEntidad(usuarioApp, idEntidad, tipoEntidad) {
         return { success: true, status: 'VENCIDO', message: `Documentación VENCIDA (Falta cargar: ${tipo.Nombre}).` };
       }
 
-      const fechaVencimiento = new Date(vencimiento.FechaVencimiento);
-      if (isNaN(fechaVencimiento.getTime())) {
-          return { success: true, status: 'VENCIDO', message: `La fecha para "${tipo.Nombre}" es inválida.` };
+      const fechaVencimiento = _parseDateBackend(vencimiento.FechaVencimiento);
+      if (!fechaVencimiento) {
+          return { success: true, status: 'VENCIDO', message: `La fecha para "${tipo.Nombre}" es inválida o tiene un formato incorrecto.` };
       }
       fechaVencimiento.setHours(0,0,0,0);
 
@@ -200,6 +200,38 @@ function apiGetVencimientos(usuarioApp, filtro) {
   } catch (e) {
     return { success: false, error: e.message };
   }
+}
+
+// --- HELPER INTERNO ---
+
+/**
+ * Parsea de forma robusta una fecha que puede venir como objeto Date o como string (DD/MM/YYYY o YYYY-MM-DD).
+ * @param {*} dateInput El valor a parsear.
+ * @returns {Date|null} Un objeto Date válido o null si no se puede parsear.
+ */
+function _parseDateBackend(dateInput) {
+    if (!dateInput) return null;
+    if (dateInput instanceof Date && !isNaN(dateInput)) {
+        return dateInput;
+    }
+    if (typeof dateInput === 'string') {
+        let str = dateInput.trim();
+        if (str.includes('T')) str = str.split('T')[0];
+        if (str.includes(' ')) str = str.split(' ')[0];
+
+        let dateObj = null;
+        let p;
+
+        if (str.includes('/')) { // Formato DD/MM/YYYY
+            p = str.split('/');
+            if (p.length === 3) dateObj = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+        } else if (str.includes('-')) { // Formato YYYY-MM-DD
+            p = str.split('-');
+            if (p.length === 3) dateObj = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+        }
+        return (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
+    }
+    return null;
 }
 
 function apiSaveVencimiento(usuarioApp, formObject) {
