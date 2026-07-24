@@ -449,8 +449,9 @@
 
     form.elements['Legajo'].readOnly = true;
 
-    // Cargar vencimientos
-    chof_cargarVencimientos(row.Legajo);
+    // Limpiamos el contenido de la pestaña de vencimientos antes de mostrar.
+    // Se cargará al hacer clic en la pestaña.
+    document.getElementById('chof_vencimientosContainer').innerHTML = '<p class="text-muted">Haga clic en la pestaña para cargar los vencimientos.</p>';
 
     new bootstrap.Modal(document.getElementById('chof_modalChofer')).show();
   }
@@ -644,6 +645,27 @@
     document.getElementById('chof_alertBox').innerHTML = '<strong>Error de red:</strong> ' + e.message;
     document.getElementById('chof_alertBox').classList.remove('d-none');
     document.getElementById('chof_tableBody').innerHTML = '<tr><td colspan="22" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- LÓGICA DE EVENTOS PARA TABS ---
+  // Se ejecuta una sola vez al cargar la vista de choferes.
+  const chofModalEl = document.getElementById('chof_modalChofer');
+  if (chofModalEl) {
+    const vencimientosTab = chofModalEl.querySelector('#chof-vencimientos-tab');
+    
+    vencimientosTab.addEventListener('show.bs.tab', function (event) {
+      // Obtener el legajo del formulario que ya está poblado
+      const legajoInput = document.querySelector('#chof_formChofer input[name="Legajo"]');
+      const legajo = legajoInput ? legajoInput.value : null;
+      
+      // Solo cargar si hay un legajo (es decir, estamos en modo edición)
+      if (legajo) {
+        chof_cargarVencimientos(legajo);
+      } else {
+        // En modo creación, mostrar un mensaje claro.
+        document.getElementById('chof_vencimientosContainer').innerHTML = '<p class="text-info">Guarde primero la ficha del chofer para poder administrar sus vencimientos.</p>';
+      }
+    });
   }
 
   // --- EJECUCIÓN INMEDIATA PARA SPA ---
