@@ -128,6 +128,10 @@ function apiSaveVencimiento(usuarioApp, formObject) {
 
     const db = new ModelDocumentacionVencimientos(usuarioApp);
     if (formObject.actionType === 'create') {
+      // Generar un ID único si es un registro nuevo y no viene con uno.
+      if (!formObject.ID) {
+        formObject.ID = 'DV-' + new Date().getTime() + Math.floor(Math.random() * 100);
+      }
       db.create(formObject);
     } else {
       db.update(formObject.ID, formObject);
