@@ -1,0 +1,457 @@
+<style>
+  .vencido { background-color: #ffdddd !important; }
+  .proximo { background-color: #fff3cd !important; }
+  .vigente { background-color: #d1e7dd !important; }
+</style>
+
+<h2 class="mb-3">Gestión de Documentación</h2>
+<div id="doc_alertBox" class="alert alert-danger d-none shadow-sm"></div>
+
+<!-- Pestañas de Navegación -->
+<ul class="nav nav-tabs" id="docTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="gestion-tab" data-bs-toggle="tab" data-bs-target="#gestionVencimientos" type="button" role="tab">Gestión de Vencimientos</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tipos-tab" data-bs-toggle="tab" data-bs-target="#adminTipos" type="button" role="tab">Tipos de Documento (ABM)</button>
+  </li>
+</ul>
+
+<!-- Contenido de las Pestañas -->
+<div class="tab-content" id="docTabContent">
+
+  <!-- Pestaña 1: Gestión de Vencimientos -->
+  <div class="tab-pane fade show active" id="gestionVencimientos" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <div class="row align-items-end">
+          <div class="col-md-6">
+            <label for="doc_selChoferUnidad" class="form-label">Seleccionar Chofer o Unidad:</label>
+            <select id="doc_selChoferUnidad" class="form-select" onchange="doc_onSelectChoferUnidadChange()">
+              <option value="">Cargando...</option>
+            </select>
+          </div>
+        </div>
+        <hr>
+        <div id="doc_vencimientosList" class="mt-3">
+          <p class="text-muted">Seleccione un chofer o unidad para ver sus vencimientos.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pestaña 2: ABM Tipos de Documento -->
+  <div class="tab-pane fade" id="adminTipos" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <button id="doc_btnNuevoTipo" class="btn btn-success mb-3 d-none" onclick="doc_abrirModalTipo(true)">+ Nuevo Tipo</button>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>Acciones</th>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Es Obligatorio</th>
+                <th>Aplica A</th>
+                <th class="text-center">Días Tolerancia</th>
+                <th class="text-center">Días Preaviso</th>
+              </tr>
+            </thead>
+            <tbody id="doc_tiposTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal para ABM de Tipos de Documento -->
+<div class="modal fade" id="doc_modalTipo" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="doc_modalTipoTitle">Tipo de Documento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="doc_formTipo">
+          <input type="hidden" name="actionType" id="doc_tipoActionType">
+          <div class="mb-3">
+            <label class="form-label">ID</label>
+            <input type="text" name="ID" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="Nombre" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Es Obligatorio</label>
+            <select name="EsObligatorio" class="form-select" required>
+              <option value="SI">SI</option>
+              <option value="NO">NO</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Aplica A</label>
+            <select name="AplicaA" class="form-select" required>
+              <option value="Chofer">Chofer</option>
+              <option value="Unidad">Unidad</option>
+            </select>
+          </div>
+          <div class="row mt-3">
+            <div class="col-6">
+              <label class="form-label small">Días de Tolerancia</label>
+              <input type="number" name="DiasTolerancia" class="form-control" value="0" min="0" required>
+              <div class="form-text small">Días post-vencimiento en que aún se permite operar.</div>
+            </div>
+            <div class="col-6">
+              <label class="form-label small">Días de Preaviso</label>
+              <input type="number" name="DiasPreaviso" class="form-control" value="30" min="0" required>
+              <div class="form-text small">Días previos para empezar a notificar.</div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="doc_guardarTipo()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Editar Fecha de Vencimiento -->
+<div class="modal fade" id="doc_modalVencimiento" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="doc_modalVencimientoTitle">Editar Vencimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="doc_formVencimiento">
+          <input type="hidden" name="actionType" id="doc_vencActionType">
+          <input type="hidden" name="ID">
+          <input type="hidden" name="ID_Chofer">
+          <input type="hidden" name="ID_Documentacion_Tipo">
+          <div class="mb-3">
+            <label class="form-label">Fecha de Vencimiento</label>
+            <input type="date" name="FechaVencimiento" class="form-control" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="doc_guardarVencimiento()">Guardar Fecha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var doc_listas = { choferes: [], vehiculos: [], tipos: [] };
+  var doc_roles = { tipos: 'None', vencimientos: 'None' };
+  var doc_vencimientosActuales = [];
+  const usu = sessionStorage.getItem('sys_usuario') || '';
+
+  // --- INICIALIZACIÓN ---
+  function doc_init() {
+    showLoading(true);
+    document.getElementById('doc_alertBox').classList.add('d-none');
+
+    // Hacemos una llamada múltiple para traer todos los datos necesarios
+    Promise.all([
+      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetChoferes(usu)),
+      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetVehiculos(usu)),
+      new Promise((resolve, reject) => google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).apiGetDocumentacionTipos(usu))
+    ]).then(([resChoferes, resVehiculos, resTipos]) => {
+      showLoading(false);
+      
+      if (resChoferes.success) doc_listas.choferes = resChoferes.data;
+      if (resVehiculos.success) doc_listas.vehiculos = resVehiculos.data;
+      if (resTipos.success) {
+        doc_listas.tipos = resTipos.data;
+        doc_roles.tipos = resTipos.role;
+      } else {
+        doc_handleError({ message: 'No se pudieron cargar los Tipos de Documento. ' + resTipos.error });
+      }
+      
+      doc_renderSelectChoferUnidad();
+      doc_renderTipos();
+
+    }).catch(doc_handleError);
+  }
+
+  // --- PESTAÑA 1: GESTIÓN DE VENCIMIENTOS ---
+  function doc_renderSelectChoferUnidad() {
+    const select = document.getElementById('doc_selChoferUnidad');
+    select.innerHTML = '<option value="">- Seleccione -</option>';
+
+    const optgroupChoferes = document.createElement('optgroup');
+    optgroupChoferes.label = 'Choferes';
+    doc_listas.choferes.forEach(c => {
+      if (c.Legajo && c.Nombre) {
+        const opt = new Option(`${c.Nombre} (Leg: ${c.Legajo})`, `chofer_${c.Legajo}`);
+        optgroupChoferes.appendChild(opt);
+      }
+    });
+    select.appendChild(optgroupChoferes);
+
+    const optgroupUnidades = document.createElement('optgroup');
+    optgroupUnidades.label = 'Unidades';
+    doc_listas.vehiculos.forEach(v => {
+      if (v.Interno) {
+        const opt = new Option(`${v.Marca} ${v.Modelo} (Int: ${v.Interno})`, `unidad_${v.Interno}`);
+        optgroupUnidades.appendChild(opt);
+      }
+    });
+    select.appendChild(optgroupUnidades);
+  }
+
+  function doc_onSelectChoferUnidadChange() {
+    const select = document.getElementById('doc_selChoferUnidad');
+    const selectedValue = select.value;
+    const listContainer = document.getElementById('doc_vencimientosList');
+
+    if (!selectedValue) {
+      listContainer.innerHTML = '<p class="text-muted">Seleccione un chofer o unidad para ver sus vencimientos.</p>';
+      return;
+    }
+
+    listContainer.innerHTML = '<div class="text-center"><span class="spinner-border spinner-border-sm"></span> Cargando vencimientos...</div>';
+    const [tipoEntidad, idEntidad] = selectedValue.split('_');
+
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          doc_vencimientosActuales = res.data;
+          doc_roles.vencimientos = res.role;
+          doc_renderVencimientosList(tipoEntidad, idEntidad);
+        } else {
+          listContainer.innerHTML = `<div class="alert alert-warning">${res.error}</div>`;
+        }
+      })
+      .withFailureHandler(doc_handleError)
+      .apiGetVencimientos(usu, { ID_Chofer: idEntidad });
+  }
+
+  function doc_renderVencimientosList(tipoEntidad, idEntidad) {
+    const listContainer = document.getElementById('doc_vencimientosList');
+    const tiposAplicables = doc_listas.tipos.filter(t => t.AplicaA.toLowerCase() === tipoEntidad.toLowerCase());
+    
+    if (tiposAplicables.length === 0) {
+      listContainer.innerHTML = '<p class="text-info">No hay tipos de documentación configurados para esta entidad.</p>';
+      return;
+    }
+
+    let html = '<ul class="list-group">';
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0); // Normalizar a la medianoche para comparar solo fechas
+
+    tiposAplicables.forEach(tipo => {
+      const vencimiento = doc_vencimientosActuales.find(v => v.ID_Documentacion_Tipo === tipo.ID);
+      let fechaStr = "No cargado";
+      let claseFondo = "";
+      let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
+
+      if (vencimiento && vencimiento.FechaVencimiento) {
+        const fechaVenc = new Date(vencimiento.FechaVencimiento);
+        fechaStr = fechaVenc.toLocaleDateString('es-AR'); // Formato DD/MM/YYYY
+        fechaVenc.setHours(0, 0, 0, 0); // Normalizar fecha de vencimiento
+
+        const diasPreaviso = parseInt(tipo.DiasPreaviso) || 30;
+        const fechaPreaviso = new Date(fechaVenc);
+        fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
+
+        if (fechaVenc < hoy) {
+          claseFondo = 'vencido';
+          badge = `<span class="badge bg-danger">Vencido</span>`;
+        } else if (hoy >= fechaPreaviso) {
+          claseFondo = 'proximo';
+          badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
+        } else {
+          claseFondo = 'vigente';
+          badge = `<span class="badge bg-success">Vigente</span>`;
+        }
+      }
+
+      let botonEditar = '';
+      if (doc_roles.vencimientos === 'Admin' || doc_roles.vencimientos === 'Update') {
+        const vencimientoData = {
+          ID: vencimiento ? vencimiento.ID : null,
+          ID_Chofer: idEntidad,
+          ID_Documentacion_Tipo: tipo.ID,
+          FechaVencimiento: vencimiento ? vencimiento.FechaVencimiento : '',
+          NombreDocumento: tipo.Nombre
+        };
+        const dataEncoded = encodeURIComponent(JSON.stringify(vencimientoData));
+        botonEditar = `<button class="btn btn-sm btn-outline-primary" onclick="doc_abrirModalVencimiento(decodeURIComponent('${dataEncoded}'))">✏️ Editar</button>`;
+      }
+
+      html += `<li class="list-group-item d-flex justify-content-between align-items-center ${claseFondo}">
+                  <div>
+                    <strong>${tipo.Nombre}</strong>
+                    <small class="d-block text-muted">Vence: ${fechaStr}</small>
+                  </div>
+                  <div class="d-flex align-items-center">
+                    ${badge}
+                    <div class="ms-3">${botonEditar}</div>
+                  </div>
+               </li>`;
+    });
+    html += '</ul>';
+    listContainer.innerHTML = html;
+  }
+
+  function doc_abrirModalVencimiento(dataString) {
+    const data = JSON.parse(dataString);
+    const form = document.getElementById('doc_formVencimiento');
+    form.reset();
+    
+    document.getElementById('doc_modalVencimientoTitle').innerText = `Editar: ${data.NombreDocumento}`;
+    form.elements['actionType'].value = data.ID ? 'update' : 'create';
+    form.elements['ID'].value = data.ID || '';
+    form.elements['ID_Chofer'].value = data.ID_Chofer;
+    form.elements['ID_Documentacion_Tipo'].value = data.ID_Documentacion_Tipo;
+    form.elements['FechaVencimiento'].value = data.FechaVencimiento ? chof_deTextoAFechaInput(data.FechaVencimiento) : '';
+
+    new bootstrap.Modal(document.getElementById('doc_modalVencimiento')).show();
+  }
+
+  function doc_guardarVencimiento() {
+    const form = document.getElementById('doc_formVencimiento');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+
+    const formData = {};
+    new FormData(form).forEach((value, key) => {
+      if (key === 'FechaVencimiento' && value) {
+        formData[key] = chof_deInputAFechaTexto(value);
+      } else {
+        formData[key] = value;
+      }
+    });
+
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('doc_modalVencimiento')).hide();
+          doc_onSelectChoferUnidadChange(); // Recargar la lista
+        } else {
+          alert('Error al guardar: ' + res.error);
+        }
+        showLoading(false);
+      })
+      .withFailureHandler(doc_handleError)
+      .apiSaveVencimiento(usu, formData);
+  }
+
+  // --- PESTAÑA 2: ABM TIPOS ---
+  function doc_renderTipos() {
+    const tbody = document.getElementById('doc_tiposTableBody');
+    tbody.innerHTML = '';
+    if (doc_roles.tipos === 'Admin' || doc_roles.tipos === 'Create') {
+      document.getElementById('doc_btnNuevoTipo').classList.remove('d-none');
+    }
+
+    doc_listas.tipos.forEach(tipo => {
+      let botones = '';
+      if (doc_roles.tipos === 'Admin' || doc_roles.tipos === 'Update') {
+        botones += `<button class="btn btn-xs btn-warning" onclick='doc_abrirModalTipo(false, ${JSON.stringify(tipo)})'>✏️</button> `;
+      }
+      if (doc_roles.tipos === 'Admin') {
+        botones += `<button class="btn btn-xs btn-danger" onclick="doc_eliminarTipo('${tipo.ID}')">🗑️</button>`;
+      }
+
+      tbody.innerHTML += `<tr>
+        <td>${botones}</td>
+        <td>${tipo.ID}</td>
+        <td>${tipo.Nombre}</td>
+        <td>${tipo.EsObligatorio}</td>
+        <td>${tipo.AplicaA}</td>
+        <td class="text-center">${tipo.DiasTolerancia || 0}</td>
+        <td class="text-center">${tipo.DiasPreaviso || 0}</td>
+      </tr>`;
+    });
+  }
+
+  function doc_abrirModalTipo(isCreate, data = {}) {
+    const form = document.getElementById('doc_formTipo');
+    form.reset();
+    document.getElementById('doc_modalTipoTitle').innerText = isCreate ? 'Nuevo Tipo de Documento' : 'Editar Tipo de Documento';
+    form.elements['actionType'].value = isCreate ? 'create' : 'update';
+    form.elements['ID'].readOnly = !isCreate;
+
+    if (!isCreate) {
+      for (const key in data) {
+        if (form.elements[key]) form.elements[key].value = data[key];
+      }
+    }
+    new bootstrap.Modal(document.getElementById('doc_modalTipo')).show();
+  }
+
+  function doc_guardarTipo() {
+    const form = document.getElementById('doc_formTipo');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const formData = Object.fromEntries(new FormData(form));
+
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('doc_modalTipo')).hide();
+          doc_init(); // Recargamos todo
+        } else {
+          alert('Error al guardar: ' + res.error);
+          showLoading(false);
+        }
+      })
+      .withFailureHandler(doc_handleError)
+      .apiSaveDocumentacionTipo(usu, formData);
+  }
+
+  function doc_eliminarTipo(id) {
+    if (!confirm(`¿Confirma la eliminación del tipo de documento con ID "${id}"?`)) return;
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (res.success) {
+          doc_init();
+        } else {
+          alert('Error al eliminar: ' + res.error);
+          showLoading(false);
+        }
+      })
+      .withFailureHandler(doc_handleError)
+      .apiDeleteDocumentacionTipo(usu, id);
+  }
+
+  // --- HELPERS ---
+  function doc_handleError(error) {
+    showLoading(false);
+    const alertBox = document.getElementById('doc_alertBox');
+    alertBox.innerText = 'Error: ' + error.message;
+    alertBox.classList.remove('d-none');
+  }
+
+  // Reutilizamos funciones de fecha de otros módulos si existen
+  if (typeof chof_deTextoAFechaInput === 'undefined') {
+    function chof_deTextoAFechaInput(fechaTexto) {
+      if (!fechaTexto || !fechaTexto.includes('/')) return '';
+      const [d, m, y] = fechaTexto.split('/');
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+  }
+  if (typeof chof_deInputAFechaTexto === 'undefined') {
+    function chof_deInputAFechaTexto(fechaInput) {
+      if (!fechaInput || !fechaInput.includes('-')) return '';
+      const [y, m, d] = fechaInput.split('-');
+      return `${d}/${m}/${y}`;
+    }
+  }
+
+  // --- INICIO ---
+  doc_init();
+</script>

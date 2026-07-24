@@ -4,6 +4,7 @@
 <head>
     <base target="_top">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <style>
         body {
             padding-top: 70px;
@@ -39,13 +40,16 @@
                             Tablas Maestras
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('choferes')">Choferes</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('lugares')">Lugares</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('empresas')">Empresas Transporte</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('vehiculos')">Vehículos</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('clientes')">Clientes</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('liquidaciones')">LiquidarCliente</a></li>
-                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('viajes')">Viajes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('viajes')"><i class="bi bi-truck me-2"></i>Viajes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('liquidaciones')"><i class="bi bi-receipt-cutoff me-2"></i>Liquidar Cliente</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('clientes')"><i class="bi bi-building me-2"></i>Clientes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('choferes')"><i class="bi bi-person-badge me-2"></i>Choferes</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('vehiculos')"><i class="bi bi-truck-front me-2"></i>Vehículos</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('lugares')"><i class="bi bi-geo-alt me-2"></i>Lugares</a></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('empresas')"><i class="bi bi-briefcase me-2"></i>Empresas Transporte</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="javascript:void(0);" onclick="navegar('documentacion')"><i class="bi bi-card-checklist me-2"></i>Gestión de Documentación</a></li>
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
@@ -54,13 +58,13 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li>
-                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_chof_abrirModal()">
-                                    📄 Liq. Choferes Propio
+                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_chof_abrirModal()"><i class="bi bi-file-earmark-person me-2"></i>
+                                    Liq. Choferes Propio
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_ibcm_abrirModal()">
-                                    📄 Reporte IBCM
+                                <a class="dropdown-item" href="javascript:void(0);" onclick="rep_ibcm_abrirModal()"><i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                                    Reporte IBCM
                                 </a>
                             </li>
                         </ul>
