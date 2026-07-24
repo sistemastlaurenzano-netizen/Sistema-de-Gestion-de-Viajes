@@ -43,114 +43,139 @@
         <h5 class="modal-title">Ficha Técnica del Vehículo</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <form id="veh_formVehiculo">
-          <input type="hidden" name="actionType" id="veh_actionType">
-          
-          <div class="row g-3">
-            
-            <div class="col-md-4"> 
-               <h6 class="text-primary border-bottom pb-2">Identificación</h6>
-               
-               <div class="row">
-                 <div class="col-4">
-                   <label class="form-label small">Interno</label>
-                   <input type="text" name="Interno" id="veh_inputInterno" class="form-control form-control-sm fw-bold" placeholder="Ej: A-100" required>
-                 </div>
-                 <div class="col-8">
-                   <label class="form-label small">Patente</label>
-                   <input type="text" name="Patente" class="form-control form-control-sm" required>
-                 </div>
-               </div>
+      <div class="modal-body p-0">
+        <!-- Pestañas -->
+        <ul class="nav nav-tabs px-3 pt-2" id="veh_tab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="veh-datos-tab" data-bs-toggle="tab" data-bs-target="#veh-datos" type="button" role="tab">Datos del Vehículo</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="veh-vencimientos-tab" data-bs-toggle="tab" data-bs-target="#veh-vencimientos" type="button" role="tab">Vencimientos</button>
+          </li>
+        </ul>
 
-               <div class="row mt-2">
-                  <div class="col-6">
-                    <label class="form-label small">Marca</label>
-                    <input type="text" name="Marca" class="form-control form-control-sm">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">Modelo</label>
-                    <input type="text" name="Modelo" class="form-control form-control-sm">
-                  </div>
-               </div>
+        <!-- Contenido de Pestañas -->
+        <div class="tab-content" id="veh_tabContent">
 
-               <div class="row mt-2">
-                  <div class="col-6">
-                    <label class="form-label small">Año</label>
-                    <input type="number" name="Anio" class="form-control form-control-sm">
-                  </div>
-                  <div class="col-6">
-                    <label class="form-label small">Tipo Unidad</label>
-                    <select name="Tipo_Unidad" class="form-select form-select-sm">
-                       <option value="">- Seleccionar -</option>
-                       <option value="Tractor">Tractor</option>
-                       <option value="Semi">Semi</option>
-                       <option value="Bitren">Bitren</option>
-                       <option value="Utilitario">Utilitario</option>
-                    </select>
-                  </div>
-               </div>
+          <!-- Pestaña 1: Datos del Vehículo -->
+          <div class="tab-pane fade show active p-3" id="veh-datos" role="tabpanel">
+            <form id="veh_formVehiculo">
+              <input type="hidden" name="actionType" id="veh_actionType">
+              
+              <div class="row g-3">
+                
+                <div class="col-md-4"> 
+                   <h6 class="text-primary border-bottom pb-2">Identificación</h6>
+                   
+                   <div class="row">
+                     <div class="col-4">
+                       <label class="form-label small">Interno</label>
+                       <input type="text" name="Interno" id="veh_inputInterno" class="form-control form-control-sm fw-bold" placeholder="Ej: A-100" required>
+                     </div>
+                     <div class="col-8">
+                       <label class="form-label small">Patente</label>
+                       <input type="text" name="Patente" class="form-control form-control-sm" required>
+                     </div>
+                   </div>
+
+                   <div class="row mt-2">
+                      <div class="col-6">
+                        <label class="form-label small">Marca</label>
+                        <input type="text" name="Marca" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Modelo</label>
+                        <input type="text" name="Modelo" class="form-control form-control-sm">
+                      </div>
+                   </div>
+
+                   <div class="row mt-2">
+                      <div class="col-6">
+                        <label class="form-label small">Año</label>
+                        <input type="number" name="Anio" class="form-control form-control-sm">
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label small">Tipo Unidad</label>
+                        <select name="Tipo_Unidad" class="form-select form-select-sm">
+                           <option value="">- Seleccionar -</option>
+                           <option value="Tractor">Tractor</option>
+                           <option value="Semi">Semi</option>
+                           <option value="Bitren">Bitren</option>
+                           <option value="Utilitario">Utilitario</option>
+                        </select>
+                      </div>
+                   </div>
+                </div>
+
+                <div class="col-md-4">
+                   <h6 class="text-primary border-bottom pb-2">Especificaciones</h6>
+
+                   <div class="row">
+                     <div class="col-6">
+                        <label class="form-label small">Config. Ejes</label>
+                        <select name="EJES" class="form-select form-select-sm">
+                        <option value="">- Seleccionar -</option>
+                        <option value="1D">1D (Direccional)</option>
+                        <option value="1D-1D">1D-1D (Chasis simple)</option>
+                        <option value="1D-2D">1D-2D (Chasis balancín)</option>
+                        <option value="3D">3D (Tridem)</option>
+                        <option value="1D-1D-1D">1D-1D-1D (1+1+1)</option>
+                        <option value="2D">2D (Tándem)</option>
+                        <option value="2D-1D">2D-1D</option>
+                        <option value="3D-3D">3D-3D (Bitren)</option>
+                        </select>
+                     </div>
+                     <div class="col-6">
+                       <label class="form-label small">Tara (Kg)</label>
+                       <input type="number" name="TARA" class="form-control form-control-sm">
+                     </div>
+                   </div>
+
+                   <label class="form-label small mt-2">N° Motor</label>
+                   <input type="text" name="Motor" class="form-control form-control-sm">
+
+                   <label class="form-label small mt-2">N° Chasis</label>
+                   <input type="text" name="Chasis" class="form-control form-control-sm">
+
+                   <label class="form-label small mt-2">Odómetro</label>
+                   <input type="number" name="Odometro" class="form-control form-control-sm">
+                </div>
+
+                <div class="col-md-4">
+                   <h6 class="text-primary border-bottom pb-2">Administración</h6>
+
+                   <label class="form-label small">Empresa Titular</label>
+                   <select name="Empresa" id="veh_selEmpresa" class="form-select form-select-sm">
+                     <option value="">Cargando...</option>
+                   </select>
+
+                   <div class="row mt-2">
+                     <div class="col-6">
+                       <label class="form-label small">Fecha Alta</label>
+                       <input type="date" name="Fecha_Alta" class="form-control form-control-sm">
+                     </div>
+                     <div class="col-6">
+                       <label class="form-label small">Fecha Baja</label>
+                       <input type="date" name="Fecha_Baja" class="form-control form-control-sm">
+                     </div>
+                   </div>
+
+                   <label class="form-label small mt-2">ID Geotab</label>
+                   <input type="text" name="Geotab_ID" class="form-control form-control-sm">
+                </div>
+
+              </div> 
+            </form>
+          </div>
+
+          <!-- Pestaña 2: Vencimientos -->
+          <div class="tab-pane fade p-3" id="veh-vencimientos" role="tabpanel">
+            <div id="veh_vencimientosContainer">
+              <p class="text-muted">Cargando vencimientos...</p>
             </div>
+          </div>
 
-            <div class="col-md-4">
-               <h6 class="text-primary border-bottom pb-2">Especificaciones</h6>
-
-               <div class="row">
-                 <div class="col-6">
-                    <label class="form-label small">Config. Ejes</label>
-                    <select name="EJES" class="form-select form-select-sm">
-                    <option value="">- Seleccionar -</option>
-                    <option value="1D">1D (Direccional)</option>
-                    <option value="1D-1D">1D-1D (Chasis simple)</option>
-                    <option value="1D-2D">1D-2D (Chasis balancín)</option>
-                    <option value="3D">3D (Tridem)</option>
-                    <option value="1D-1D-1D">1D-1D-1D (1+1+1)</option>
-                    <option value="2D">2D (Tándem)</option>
-                    <option value="2D-1D">2D-1D</option>
-                    <option value="3D-3D">3D-3D (Bitren)</option>
-                    </select>
-                 </div>
-                 <div class="col-6">
-                   <label class="form-label small">Tara (Kg)</label>
-                   <input type="number" name="TARA" class="form-control form-control-sm">
-                 </div>
-               </div>
-
-               <label class="form-label small mt-2">N° Motor</label>
-               <input type="text" name="Motor" class="form-control form-control-sm">
-
-               <label class="form-label small mt-2">N° Chasis</label>
-               <input type="text" name="Chasis" class="form-control form-control-sm">
-
-               <label class="form-label small mt-2">Odómetro</label>
-               <input type="number" name="Odometro" class="form-control form-control-sm">
-            </div>
-
-            <div class="col-md-4">
-               <h6 class="text-primary border-bottom pb-2">Administración</h6>
-
-               <label class="form-label small">Empresa Titular</label>
-               <select name="Empresa" id="veh_selEmpresa" class="form-select form-select-sm">
-                 <option value="">Cargando...</option>
-               </select>
-
-               <div class="row mt-2">
-                 <div class="col-6">
-                   <label class="form-label small">Fecha Alta</label>
-                   <input type="date" name="Fecha_Alta" class="form-control form-control-sm">
-                 </div>
-                 <div class="col-6">
-                   <label class="form-label small">Fecha Baja</label>
-                   <input type="date" name="Fecha_Baja" class="form-control form-control-sm">
-                 </div>
-               </div>
-
-               <label class="form-label small mt-2">ID Geotab</label>
-               <input type="text" name="Geotab_ID" class="form-control form-control-sm">
-            </div>
-
-          </div> 
-        </form>
+        </div>
       </div>
       <div class="modal-footer bg-light">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -160,9 +185,38 @@
   </div>
 </div>
 
+<!-- Modal para Editar Fecha de Vencimiento -->
+<div class="modal fade" id="veh_modalVencimiento" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="veh_modalVencimientoTitle">Editar Vencimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="veh_formVencimiento">
+          <input type="hidden" name="actionType" id="veh_vencActionType">
+          <input type="hidden" name="ID">
+          <input type="hidden" name="ID_Chofer"> <!-- Se reutiliza para ID_Unidad -->
+          <input type="hidden" name="ID_Documentacion_Tipo">
+          <div class="mb-3">
+            <label class="form-label">Fecha de Vencimiento</label>
+            <input type="date" name="FechaVencimiento" class="form-control" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="veh_guardarVencimiento()">Guardar Fecha</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
   var veh_userRole = null;
   var veh_listasGlobales = {}; 
+  var veh_vencimientosRole = null;
 
   function veh_cargarDatos() {
     showLoading(true);
@@ -260,11 +314,29 @@
     }
   }
 
+  function veh_parseDate(fechaTexto) {
+    if (!fechaTexto) return null;
+    const str = String(fechaTexto).trim();
+    let dateObj = null;
+    if (str.includes('/')) {
+        const parts = str.split(' ')[0].split('/');
+        if (parts.length === 3) {
+            const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+            dateObj = new Date(parseInt(year), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        }
+    } else if (str.includes('-')) {
+        dateObj = new Date(str);
+    }
+    return (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
+  }
+
   function veh_deTextoAFechaInput(fechaTexto) {
-    if (!fechaTexto || fechaTexto.indexOf('/') === -1) return '';
-    const partes = fechaTexto.split('/'); 
-    if (partes.length !== 3) return '';
-    return `${partes[2]}-${partes[1]}-${partes[0]}`;
+    const dateObj = veh_parseDate(fechaTexto);
+    if (!dateObj) return '';
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   function veh_deInputAFechaTexto(fechaInput) {
@@ -306,6 +378,10 @@
 
     // Bloquear ID al editar
     document.getElementById('veh_inputInterno').readOnly = true; 
+
+    // Limpiar vencimientos para carga bajo demanda
+    document.getElementById('veh_vencimientosContainer').innerHTML = '<p class="text-muted">Haga clic en la pestaña para cargar los vencimientos.</p>';
+
     new bootstrap.Modal(document.getElementById('veh_modalVehiculo')).show();
   }
 
@@ -340,6 +416,137 @@
       .apiSaveVehiculo(usu, formData); // Pasamos identidad
   }
 
+  // --- LÓGICA DE VENCIMIENTOS ---
+
+  function veh_cargarVencimientos(idVehiculo) {
+    const container = document.getElementById('veh_vencimientosContainer');
+    container.innerHTML = '<p class="text-muted">Cargando vencimientos...</p>';
+    const usu = sessionStorage.getItem('sys_usuario') || '';
+
+    google.script.run
+      .withSuccessHandler(res => {
+        try {
+          if (res && res.success) {
+            veh_vencimientosRole = res.role;
+            const dataToRender = Array.isArray(res.data) ? res.data : [];
+            veh_renderVencimientos(dataToRender, idVehiculo);
+          } else {
+            const errorMsg = res ? res.error : 'Respuesta inválida del servidor.';
+            container.innerHTML = `<div class="alert alert-warning">${errorMsg}</div>`;
+          }
+        } catch (e) {
+            container.innerHTML = `<div class="alert alert-danger">Error al procesar la respuesta: ${e.message}</div>`;
+        }
+      })
+      .withFailureHandler(err => {
+        container.innerHTML = `<div class="alert alert-danger">Error de red: ${err.message}</div>`;
+      })
+      .apiGetVencimientosEntidad(usu, 'Unidad', idVehiculo);
+  }
+
+  function veh_renderVencimientos(vencimientos, idVehiculo) {
+    const container = document.getElementById('veh_vencimientosContainer');
+    if (!vencimientos || vencimientos.length === 0) {
+      container.innerHTML = '<p class="text-info">No hay tipos de documentación configurados para Unidades.</p>';
+      return;
+    }
+
+    let html = '<ul class="list-group">';
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    vencimientos.forEach(item => {
+      let fechaStr = "No cargado";
+      let claseFondo = "";
+      let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
+
+      if (item.FechaVencimiento) {
+        const fechaVenc = veh_parseDate(item.FechaVencimiento);
+        if (!fechaVenc) {
+            fechaStr = "Fecha Inválida";
+            claseFondo = 'list-group-item-dark';
+            badge = `<span class="badge bg-dark">Error en dato</span>`;
+        } else {
+            fechaStr = fechaVenc.toLocaleDateString('es-AR');
+            fechaVenc.setHours(0, 0, 0, 0);
+            const diasPreaviso = parseInt(item.DiasPreaviso) || 30;
+            const fechaPreaviso = new Date(fechaVenc);
+            fechaPreaviso.setDate(fechaPreaviso.getDate() - diasPreaviso);
+            if (fechaVenc < hoy) {
+              claseFondo = 'list-group-item-danger';
+              badge = `<span class="badge bg-danger">Vencido</span>`;
+            } else if (hoy >= fechaPreaviso) {
+              claseFondo = 'list-group-item-warning';
+              badge = `<span class="badge bg-warning text-dark">Próximo a Vencer</span>`;
+            } else {
+              claseFondo = 'list-group-item-success';
+              badge = `<span class="badge bg-success">Vigente</span>`;
+            }
+        }
+      }
+
+      let botonEditar = '';
+      if (veh_vencimientosRole === 'Admin' || veh_vencimientosRole === 'Update') {
+        const vencimientoData = {
+          ID: item.ID_Vencimiento,
+          ID_Chofer: idVehiculo, // Se reutiliza el campo para el ID de la unidad
+          ID_Documentacion_Tipo: item.ID_Documentacion_Tipo,
+          FechaVencimiento: item.FechaVencimiento,
+          NombreDocumento: item.Nombre
+        };
+        const dataEncoded = encodeURIComponent(JSON.stringify(vencimientoData));
+        botonEditar = `<button class="btn btn-sm btn-outline-primary" onclick="veh_abrirModalVencimiento(decodeURIComponent('${dataEncoded}'))">✏️ Editar</button>`;
+      }
+
+      html += `<li class="list-group-item d-flex justify-content-between align-items-center ${claseFondo}">
+                  <div><strong>${item.Nombre}</strong><small class="d-block text-muted">Vence: ${fechaStr}</small></div>
+                  <div class="d-flex align-items-center">${badge}<div class="ms-3">${botonEditar}</div></div>
+               </li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+  }
+
+  function veh_abrirModalVencimiento(dataString) {
+    const data = JSON.parse(dataString);
+    const form = document.getElementById('veh_formVencimiento');
+    form.reset();
+    document.getElementById('veh_modalVencimientoTitle').innerText = `Editar: ${data.NombreDocumento}`;
+    form.elements['actionType'].value = data.ID ? 'update' : 'create';
+    form.elements['ID'].value = data.ID || '';
+    form.elements['ID_Chofer'].value = data.ID_Chofer;
+    form.elements['ID_Documentacion_Tipo'].value = data.ID_Documentacion_Tipo;
+    form.elements['FechaVencimiento'].value = data.FechaVencimiento ? veh_deTextoAFechaInput(data.FechaVencimiento) : '';
+    new bootstrap.Modal(document.getElementById('veh_modalVencimiento')).show();
+  }
+
+  function veh_guardarVencimiento() {
+    const form = document.getElementById('veh_formVencimiento');
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    const formData = {};
+    new FormData(form).forEach((value, key) => {
+      if (key === 'FechaVencimiento' && value) formData[key] = veh_deInputAFechaTexto(value);
+      else formData[key] = value;
+    });
+    showLoading(true);
+    const usu = sessionStorage.getItem('sys_usuario') || '';
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('veh_modalVencimiento')).hide();
+          veh_cargarVencimientos(formData.ID_Chofer); // Recargar la lista
+        } else {
+          alert('Error al guardar vencimiento: ' + res.error);
+        }
+      })
+      .withFailureHandler(err => {
+        showLoading(false);
+        alert('Error de red: ' + err.message);
+      })
+      .apiSaveVencimiento(usu, formData);
+  }
+
   function veh_eliminar(id) {
     if(!confirm('¿Confirma eliminar Interno ' + id + '?')) return;
     
@@ -364,6 +571,22 @@
     document.getElementById('veh_alertBox').innerHTML = '<strong>Error de red:</strong> ' + e.message;
     document.getElementById('veh_alertBox').classList.remove('d-none');
     document.getElementById('veh_tableBody').innerHTML = '<tr><td colspan="14" class="text-center text-danger p-4">Error de conexión. Reintente.</td></tr>';
+  }
+
+  // --- LÓGICA DE EVENTOS PARA TABS ---
+  const vehModalEl = document.getElementById('veh_modalVehiculo');
+  if (vehModalEl) {
+    const vencimientosTab = vehModalEl.querySelector('#veh-vencimientos-tab');
+    vencimientosTab.addEventListener('show.bs.tab', function (event) {
+      const idInput = document.querySelector('#veh_formVehiculo input[name="Interno"]');
+      const idVehiculo = idInput ? idInput.value : null;
+      
+      if (idVehiculo) {
+        veh_cargarVencimientos(idVehiculo);
+      } else {
+        document.getElementById('veh_vencimientosContainer').innerHTML = '<p class="text-info">Guarde primero la ficha del vehículo para poder administrar sus vencimientos.</p>';
+      }
+    });
   }
 
   // --- EJECUCIÓN INMEDIATA PARA SPA ---
