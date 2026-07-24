@@ -81,6 +81,7 @@
 <script>
   var doc_tipos = [];
   var doc_role = 'None';
+  var doc_nextId = null;
   const usu = sessionStorage.getItem('sys_usuario') || '';
 
   // --- INICIALIZACIÓN ---
@@ -94,6 +95,7 @@
         if (res.success) {
           doc_tipos = res.data;
           doc_role = res.role;
+          doc_nextId = res.nextId;
           doc_renderTipos();
         } else {
           doc_handleError({ message: 'No se pudieron cargar los Tipos de Documento. ' + res.error });
@@ -137,9 +139,11 @@
     form.reset();
     document.getElementById('doc_modalTipoTitle').innerText = isCreate ? 'Nuevo Tipo de Documento' : 'Editar Tipo de Documento';
     form.elements['actionType'].value = isCreate ? 'create' : 'update';
-    form.elements['ID'].readOnly = !isCreate;
+    form.elements['ID'].readOnly = true;
 
-    if (!isCreate) {
+    if (isCreate) {
+      form.elements['ID'].value = doc_nextId;
+    } else {
       for (const key in data) {
         if (form.elements[key]) form.elements[key].value = data[key];
       }

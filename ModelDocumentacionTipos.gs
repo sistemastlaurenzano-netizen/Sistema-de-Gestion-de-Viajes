@@ -10,6 +10,16 @@ class ModelDocumentacionTipos extends BaseModel {
   constructor(usuarioApp) {
     super('DOCUMENTACION_TIPOS', 'ID', usuarioApp);
   }
+
+  getNextId() {
+    const data = this.getData();
+    if (!data || data.length === 0) return 1; 
+
+    const ids = data.map(row => parseInt(row.ID) || 0);
+    const maxId = Math.max(...ids);
+    
+    return maxId + 1;
+  }
 }
 
 // --- API PÚBLICA PARA ABM ---
@@ -21,8 +31,9 @@ function apiGetDocumentacionTipos(usuarioApp) {
     
     const db = new ModelDocumentacionTipos(usuarioApp);
     const data = db.getData();
+    const nextId = db.getNextId();
 
-    return { success: true, data: data, role: role };
+    return { success: true, data: data, role: role, nextId: nextId };
   } catch (e) {
     return { success: false, error: e.message };
   }
