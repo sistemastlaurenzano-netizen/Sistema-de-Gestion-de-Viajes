@@ -411,28 +411,32 @@
   }
 
   // Conversión de fechas para Inputs Type="Date"
-  function chof_deTextoAFechaInput(fechaTexto) {
-    if (!fechaTexto) return '';
-    // Intenta crear un objeto Date desde cualquier formato (ISO, DD/MM/YYYY, etc.)
-    let dateObj;
-    const strFecha = String(fechaTexto);
-    if (strFecha.includes('/')) {
-        const parts = strFecha.split(' ')[0].split('/');
+  function chof_parseDate(fechaTexto) {
+    if (!fechaTexto) return null;
+    
+    const str = String(fechaTexto).trim();
+    let dateObj = null;
+
+    // Try parsing DD/MM/YYYY
+    if (str.includes('/')) {
+        const parts = str.split(' ')[0].split('/');
         if (parts.length === 3) {
-            // new Date(año, mes - 1, día)
-            dateObj = new Date(parts[2], parts[1] - 1, parts[0]);
+            const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
+            // new Date(year, monthIndex, day)
+            dateObj = new Date(parseInt(year), parseInt(parts[1]) - 1, parseInt(parts[0]));
         }
-    } else {
-        // Esto maneja formatos ISO (YYYY-MM-DDTHH:...) y YYYY-MM-DD
-        dateObj = new Date(strFecha);
+    } else if (str.includes('-')) {
+        // Try parsing ISO format (YYYY-MM-DD...)
+        dateObj = new Date(str);
     }
 
-    // Si la fecha es inválida, retorna vacío
-    if (!dateObj || isNaN(dateObj.getTime())) {
-        return '';
-    }
+    // Return the object only if it's a valid date
+    return (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
+  }
 
-    // Formatea a YYYY-MM-DD para el input
+  function chof_deTextoAFechaInput(fechaTexto) {
+    const dateObj = chof_parseDate(fechaTexto);
+    if (!dateObj) return '';
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
@@ -548,8 +552,8 @@
       let badge = `<span class="badge bg-secondary">Sin Cargar</span>`;
 
       if (item.FechaVencimiento) {
-        const fechaVenc = new Date(item.FechaVencimiento); // Intenta parsear la fecha
-        if (isNaN(fechaVenc.getTime())) { // Si la fecha es inválida...
+        const fechaVenc = chof_parseDate(item.FechaVencimiento);
+        if (!fechaVenc) {
             fechaStr = "Fecha Inválida";
             claseFondo = 'list-group-item-dark';
             badge = `<span class="badge bg-dark">Error en dato</span>`;
