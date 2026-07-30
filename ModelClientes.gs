@@ -120,16 +120,16 @@ function apiGetClientes(usuarioApp) {
 
     const provinciasDb = new BaseModel('PROVINCIAS', 'Provincia', usuarioApp);
     const paisesDb = new BaseModel('PAISES', 'País', usuarioApp);
-    const dataProvincias = provinciasDb.getData();
+    
+    const listas = {
+      provincias: provinciasDb.getData(),
+      paises: paisesDb.getData()
+    };
 
     return { 
         success: true, 
         data: data, 
-        lists: {
-            provincias: dataProvincias,
-            localidades: dataProvincias,
-            paises: paisesDb.getData()
-        }, 
+        lists: listas,
         role: role 
     };
   } catch (e) {
